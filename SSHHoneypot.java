@@ -16,25 +16,6 @@ import java.net.*;
 
 public class SSHHoneypot
 {
-    public static void main(String[] args)
-    {
-        int port = 2224; // You might need to use a different port for testing.
-        try (ServerSocket serverSocket = new ServerSocket(port))
-        {
-            System.out.println("Listening for connections on port " + port);
-            
-            while (true)
-            {
-                Socket clientSocket = serverSocket.accept();
-                handleClient(clientSocket);
-            }
-        } 
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
-    }
-
     private static void handleClient(Socket clientSocket)
     {
         try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -64,6 +45,25 @@ public class SSHHoneypot
             {
                 e.printStackTrace();
             }
+        }
+    }
+
+    public static void main(String[] args)
+    {
+        int port = 2224; // You might need to use a different port for testing.
+        try (ServerSocket serverSocket = new ServerSocket(port))
+        {
+            System.out.println("Listening for connections on port " + port);
+            
+            while (true)
+            {
+                Socket clientSocket = serverSocket.accept();
+                handleClient(clientSocket);
+            }
+        } 
+        catch (IOException e)
+        {
+            e.printStackTrace();
         }
     }
 }
