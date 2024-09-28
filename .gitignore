@@ -1,0 +1,26 @@
+# Ignore Maven target folder
+/FIUsshhoneypot/target/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# VS Code
+.vscode/
+
+# Log files
+*.log
+
+# Compiled class files
+*.class
+
+# macOS system files
+.DS_Store
+
+# Windows system files
+Thumbs.db
