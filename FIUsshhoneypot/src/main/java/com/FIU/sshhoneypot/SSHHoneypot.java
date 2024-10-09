@@ -1,5 +1,5 @@
 /*********************************************************************
- Authors   : Abdulla Al-Naimi, Darrick Sanders, John Espinal, Manuela Calle, Luis Suarez
+ Authors   : Abdulla Al-Naimi, Darrick Sanders, John Espinal, Luis Suarez, Manuela Calle.
  Course    : CIS3950 Capstone I
  Professor : Masoud Sadjadi 
  Program Purpose/Description
@@ -20,12 +20,16 @@ import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.common.SshConstants;
 
 import java.io.IOException;
+import java.net.SocketAddress;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SSHHoneypot
 { 
-    //In the future, to allow more than one attempt, we can use these two variables:
-    //private static final int MAX_ATTEMPTS = 3; // Change this to your desired number of attempts
-    //private final AtomicInteger attemptCounter = new AtomicInteger(0);
+    // Max login attempts allowed
+    private static final int MAX_ATTEMPTS = 3;
+    
+    // Store the number of login attempts for a session
+    private static AtomicInteger attemptCounter = new AtomicInteger(0);
 
     public static void main(String[] args) throws IOException
     {
@@ -41,20 +45,31 @@ public class SSHHoneypot
             @Override
             public boolean authenticate(String username, String password, ServerSession session)
             {
-                System.out.println("Login attempt with username: " + username + " and password: " + password);
+                int attempts = attemptCounter.incrementAndGet();
                 
-                 try
-                 {
-                     // Disconnect the session with a reason and message
-                     session.disconnect(SshConstants.SSH2_DISCONNECT_AUTH_CANCELLED_BY_USER, "Permission denied, please try again.");
-                 } 
-                 catch (IOException e)
-                 {
-                     System.err.println("Failed to disconnect session: " + e.getMessage());
-                 }
+                SocketAddress remoteAddress = session.getClientAddress();
+                String clientIP = remoteAddress.toString();
                 
-                
-                return false;  // Always fail login for honeypot purposes
+                // Log the login attempt
+                System.out.println("Login attempt #" + attempts + "from IP: " + clientIP + " with username: " + username + " and password: " + password);
+
+                // If the max attempts are reached, disconnect the session
+                if (attempts >= MAX_ATTEMPTS)
+                {
+                    try
+                    {
+                        session.disconnect(SshConstants.SSH2_DISCONNECT_AUTH_CANCELLED_BY_USER, "Too many failed login attempts.");
+                        System.out.println("Session disconnected after " + attempts + " failed attempts.");
+                    }
+                    catch (IOException e)
+                    {
+                        System.err.println("Failed to disconnect session: " + e.getMessage());
+                    }
+                    return false;  // Always fail login for honeypot purposes
+                }
+
+                // Return false to deny the login but allow more attempts
+                return false;
             }
         });
 
