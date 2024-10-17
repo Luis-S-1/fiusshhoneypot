@@ -19,12 +19,19 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.common.SshConstants;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
+
+
 public class SSHHoneypot
 { 
+    
+    private static final Logger logger = LoggerFactory.getLogger(SSHHoneypot.class);
     // Max login attempts allowed
     private static final int MAX_ATTEMPTS = 3;
     
@@ -52,6 +59,7 @@ public class SSHHoneypot
                 
                 // Log the login attempt
                 System.out.println("Login attempt #" + attempts + "from IP: " + clientIP + " with username: " + username + " and password: " + password);
+                logger.info("Login attempt #" + attempts + " from IP: " + clientIP + " with username: " + username + " and password: " + password);
 
                 // If the max attempts are reached, disconnect the session
                 if (attempts >= MAX_ATTEMPTS)
@@ -59,11 +67,11 @@ public class SSHHoneypot
                     try
                     {
                         session.disconnect(SshConstants.SSH2_DISCONNECT_AUTH_CANCELLED_BY_USER, "Too many failed login attempts.");
-                        System.out.println("Session disconnected after " + attempts + " failed attempts.");
+                        logger.info("Session disconnected after " + attempts + " failed attempts.");
                     }
                     catch (IOException e)
                     {
-                        System.err.println("Failed to disconnect session: " + e.getMessage());
+                        logger.error("Failed to disconnect session: " + e.getMessage());
                     }
                     return false;  // Always fail login for honeypot purposes
                 }
@@ -76,6 +84,7 @@ public class SSHHoneypot
         // Start the SSH server
         sshd.start();
         System.out.println("SSH Honeypot listening on port 2224...");
+        logger.info("SSH Honeypot listening on port 2224...");
         
     // Keep the main thread alive to avoid exit
         try
@@ -87,10 +96,12 @@ public class SSHHoneypot
         {
             // Handle interruption (e.g., server shutdown)
             System.out.println("Server interrupted, shutting down...");
+            logger.info("Server interrupted, shutting down...");
         }
         finally
         {
             sshd.stop(); // Ensure the server is stopped when exiting
+            logger.info("SSH server stopped.");
         }
     
     }
