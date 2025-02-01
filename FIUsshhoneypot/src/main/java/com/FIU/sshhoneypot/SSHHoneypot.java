@@ -30,6 +30,11 @@ import java.io.*;
 import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import java.util.TimeZone;
+
 /**
  * Minimal SSH Honeypot using Apache MINA SSHD 2.10.x with echo, Enter, and Backspace support.
  */
@@ -199,7 +204,14 @@ public class SSHHoneypot {
                         writeLine("file1.txt");
                         writeLine("file2.log");
                         writeLine("Documents");
-                    } else if (!line.isEmpty()) {
+                    } else if ("uname".equalsIgnoreCase(line)) {
+                        //output of uname
+                        writeLine("Linux");
+                    } else if ("uname -a".equalsIgnoreCase(line)) {
+                        //output of uname -a
+                        writeLine(getUname());
+                    } 
+                    else if (!line.isEmpty()) {
                         logger.info("User typed command: {}", line);
                         writeLine("bash: " + line + ": command not found");
                     }
@@ -265,6 +277,21 @@ public class SSHHoneypot {
                 out.flush();
             }
         }
+        
+        private String getUname() {
+        // Define system properties
+        String hostname = "Company";
+        String kernelVersion = "4.18.0-553.33.1.el8_10.x86_64";
+        String arch = "x86_64 x86_64 x86_64 GNU/Linux";
+
+        // Get current date in the expected format for uname command
+        ZonedDateTime now = ZonedDateTime.now(TimeZone.getTimeZone("EST").toZoneId());
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH);
+        String formattedDate = now.format(formatter);
+
+        // Construct uname -a output
+        return String.format("Linux %s %s #1 SMP %s %s", hostname, kernelVersion, formattedDate, arch);
+		}
     }
 }
 
