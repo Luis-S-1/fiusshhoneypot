@@ -201,16 +201,34 @@ public class SSHHoneypot {
                         break;
                     } else if ("ls".equalsIgnoreCase(line)) {
                         //directory listing
-                        writeLine("file1.txt");
-                        writeLine("file2.log");
-                        writeLine("Documents");
+                        logger.info("User typed command: ls", line);
+                        writeLine("Desktop    Documents    Downloads    Music    Pictures    Videos");
                     } else if ("uname".equalsIgnoreCase(line)) {
                         //output of uname
+                        logger.info("User typed command: uname", line);
                         writeLine("Linux");
                     } else if ("uname -a".equalsIgnoreCase(line)) {
                         //output of uname -a
+                        logger.info("User typed command: uname -a", line);
                         writeLine(getUname());
-                    } 
+                    }
+                    else if ("hostname".equalsIgnoreCase(line)) {
+						logger.info("User typed command: hostname", line);
+                        writeLine("Company");
+                    }
+                    else if ("whoami".equalsIgnoreCase(line)) {
+						logger.info("User typed command: whoami", line);
+                        writeLine("root");
+                    }
+                    else if ("pwd".equalsIgnoreCase(line)) {
+						logger.info("User typed command: pwd", line);
+                        writeLine("/root");
+                    }
+                    else if ("history".equalsIgnoreCase(line)) {
+						logger.info("User typed command: history", line);
+                        writeLine("1  history");
+                        //We could change this to accurately track command history.
+                    }     
                     else if (!line.isEmpty()) {
                         logger.info("User typed command: {}", line);
                         writeLine("bash: " + line + ": command not found");
