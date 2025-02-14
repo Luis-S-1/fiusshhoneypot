@@ -1,13 +1,13 @@
 /*********************************************************************
  Authors   : Abdulla Al-Naimi, Darrick Sanders, Jose Varela Garcia, Luis Suarez, Manuela Calle.
- Course    : CIS3950 Capstone I
+ Course    : CIS4951 Capstone II
  Professor : Masoud Sadjadi 
  Program Purpose/Description
-Our project idea is to create an SSH Honeypot. SSH Honeypot is a network decoy deployed temporarily (typically on port 22) 
+Our project idea is to create an SSH Honeypot in Java. An SSH Honeypot is a network decoy deployed temporarily (typically on port 22) 
 and is used to capture any data on intruders trying to connect to our network through a remote connection. 
 Data includes any credentials used to log in, IP addresses, and any activity after login.
 
- Due Date  : 12/16/2024 
+ Due Date  : 04/28/2025 
  
 *********************************************************************/
 
@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.HashMap;
+import java.util.Map;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -36,7 +38,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 /**
- * Minimal SSH Honeypot using Apache MINA SSHD 2.10.x with echo, Enter, and Backspace support.
+ * SSH Honeypot using Apache MINA SSHD 2.10.0
  */
 public class SSHHoneypot {
 
@@ -82,7 +84,7 @@ public class SSHHoneypot {
                     return false;
                 }
 
-                // Allow only username = "luis" and password = "a"
+                // User root, password abc123
                 if ("root".equals(username) && "abc123".equals(password)) {
                     // Reset counter on success
                     attemptCounter.set(0);
@@ -125,9 +127,28 @@ public class SSHHoneypot {
     }
 
     /**
-     * A minimal shell that echoes user input and handles 'ls', 'exit', and unknown commands.
+     * A small shell that handles some basic commands and file tree navigation.
      */
     private static class MyShell implements Command, Runnable {
+
+        //Simulation of a static filesystem tree. We are mapping directories to directory content
+        // A HashMap is a data structure with key-value pairs, like a dictionary.
+        private static final Map<String, String[]> FILESYSTEM = new HashMap<>();
+
+        static {
+            // Populating 'fake' directories
+            FILESYSTEM.put("/root", new String[]{"Desktop", "Documents", "Downloads", "Music", "Pictures", "Videos"});
+            FILESYSTEM.put("/root/Desktop", new String[]{"notes.txt"});
+            FILESYSTEM.put("/root/Documents", new String[]{"CompanySecrets.pdf", "Project"});
+            FILESYSTEM.put("/root/Documents/Project", new String[]{"README.md"});
+            FILESYSTEM.put("/root/Downloads", new String[]{"Install.sh"});
+            FILESYSTEM.put("/root/Music", new String[]{}); //an empty 'directory'
+            FILESYSTEM.put("/root/Pictures", new String[]{});
+            FILESYSTEM.put("/root/Videos", new String[]{});
+        }
+
+        // Track the 'current directory'. Start at /root.
+        private String currentDirectory = "/root";
 
         private InputStream in;
         private OutputStream out;
@@ -178,14 +199,14 @@ public class SSHHoneypot {
         @Override
         public void run() {
             try {
-                // Print welcome once
+                // Print welcome
                 writeLine("Welcome to CentOS 8!");
                 writeLine("Please report any issues or missing software to Some@Company.org");
-                //writeLine("Type 'ls' to 'list directory contents', or 'exit' to quit.");
 
                 while (running) {
-                    // Print prompt
-                    write("root@Company:~# ");
+                    
+                    //get the appropriate shell prompt based on the current directory
+                    write(getPrompt());
                     out.flush();
 
                     // Read line of user input with echo + backspace handling
@@ -196,36 +217,41 @@ public class SSHHoneypot {
                     }
                     line = line.trim();
 
-                    // Check commands
+                    // Evaluate user input:
                     if ("exit".equalsIgnoreCase(line)) {
                         break;
-                    } else if ("ls".equalsIgnoreCase(line)) {
+                    }
+                    else if (line.startsWith("cd")) {
+                        logger.info("User typed: {}", line);
+                        CdCommand(line);
+                    } 
+                    else if ("ls".equalsIgnoreCase(line)) {
                         //directory listing
-                        logger.info("User typed command: ls", line);
-                        writeLine("Desktop    Documents    Downloads    Music    Pictures    Videos");
+                        logger.info("User typed: {}", line);
+                        LsCommand();
                     } else if ("uname".equalsIgnoreCase(line)) {
                         //output of uname
-                        logger.info("User typed command: uname", line);
+                        logger.info("User typed: {}", line);
                         writeLine("Linux");
                     } else if ("uname -a".equalsIgnoreCase(line)) {
                         //output of uname -a
-                        logger.info("User typed command: uname -a", line);
+                        logger.info("User typed: {}", line);
                         writeLine(getUname());
                     }
                     else if ("hostname".equalsIgnoreCase(line)) {
-						logger.info("User typed command: hostname", line);
+                        logger.info("User typed: {}", line);
                         writeLine("Company");
                     }
                     else if ("whoami".equalsIgnoreCase(line)) {
-						logger.info("User typed command: whoami", line);
+                        logger.info("User typed: {}", line);
                         writeLine("root");
                     }
                     else if ("pwd".equalsIgnoreCase(line)) {
-						logger.info("User typed command: pwd", line);
-                        writeLine("/root");
+                        logger.info("User typed: {}", line);
+                        writeLine(currentDirectory);
                     }
                     else if ("history".equalsIgnoreCase(line)) {
-						logger.info("User typed command: history", line);
+                        logger.info("User typed: {}", line);
                         writeLine("1  history");
                         //We could change this to accurately track command history.
                     }     
@@ -241,6 +267,79 @@ public class SSHHoneypot {
                 if (exitCallback != null) {
                     exitCallback.onExit(0);
                 }
+            }
+        }
+        
+        //get the appropriate shell prompt based on the current directory
+        private String getPrompt() {
+            if ("/root".equals(currentDirectory)) {
+                return "root@Company:~# ";
+            } else if (currentDirectory.startsWith("/root/")) {
+                String subPath = currentDirectory.substring("/root".length()); //subpath is everything after "/root" in the string
+                return "root@Company:~" + subPath + "# "; //prepend ~ and add # at the end.
+            } else {
+                return "root@Company:" + currentDirectory + "# ";
+            }
+        }
+
+        //Process the cd command
+        private void CdCommand(String line) throws IOException {
+            String[] parts = line.split("\\s+");
+            // If no argument, go to /root
+            if (parts.length == 1) {
+                currentDirectory = "/root";
+                return;
+            }
+            String target = parts[1];
+
+            // 'cd ..' => go up one directory
+            if ("..".equals(target)) {
+                currentDirectory = goUpOneLevel(currentDirectory);
+                return;
+            }
+            // If user typed an absolute path
+            if (target.startsWith("/")) {
+                if (FILESYSTEM.containsKey(target)) {
+                    currentDirectory = target;
+                } else {
+                    writeLine("bash: cd: " + target + ": No such file or directory");
+                }
+            } else {
+                // If user typed a relative path, then we combine with currentDirectory
+                String newPath = currentDirectory.equals("/") 
+                        ? "/" + target 
+                        : currentDirectory + "/" + target;
+                if (FILESYSTEM.containsKey(newPath)) {
+                    currentDirectory = newPath;
+                } else {
+                    writeLine("bash: cd: " + target + ": No such file or directory");
+                }
+            }
+        }
+        
+        // Going up one level. 'cd ..'
+        private String goUpOneLevel(String path) {
+            // If at / or /root, don't allow going higher.
+            if ("/".equals(path) || "/root".equals(path)) {
+                return "/root";
+            }
+            int lastSlash = path.lastIndexOf('/');
+            if (lastSlash <= 0) {
+                // fallback if somehow not found
+                return "/root";
+            }
+            return path.substring(0, lastSlash);
+        }
+        
+        //Process the ls command
+        private void LsCommand() throws IOException {
+            String[] items = FILESYSTEM.get(currentDirectory);
+            if (items == null || items.length == 0) {
+                // no items
+                writeLine("");
+            } else {
+                // Join them with spaces
+                writeLine(String.join("    ", items));
             }
         }
 
@@ -309,7 +408,7 @@ public class SSHHoneypot {
 
         // Construct uname -a output
         return String.format("Linux %s %s #1 SMP %s %s", hostname, kernelVersion, formattedDate, arch);
-		}
+        }
     }
 }
 
