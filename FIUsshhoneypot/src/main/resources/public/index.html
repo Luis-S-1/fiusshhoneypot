@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Honeypot Dashboard</title>
+</head>
+<body>
+    <h1>SSH Honeypot Dashboard</h1>
+    <button id="refreshLog">Refresh Log</button>
+    <button id="fetchSummary">Fetch Summary</button>
+
+    <h2>Log Content</h2>
+    <pre id="logContent"></pre>
+
+    <h2>Summary</h2>
+    <div id="summary"></div>
+
+    <script>
+        const logContentEl = document.getElementById('logContent');
+        const summaryEl = document.getElementById('summary');
+
+        document.getElementById('refreshLog').addEventListener('click', () => {
+            fetch('/log')
+                .then(response => response.text())
+                .then(data => {
+                    logContentEl.textContent = data;
+                })
+                .catch(err => {
+                    console.error('Error fetching log:', err);
+                });
+        });
+
+        document.getElementById('fetchSummary').addEventListener('click', () => {
+            fetch('/summary')
+                .then(response => response.json())
+                .then(json => {
+                    summaryEl.textContent = JSON.stringify(json);
+                })
+                .catch(err => {
+                    console.error('Error fetching summary:', err);
+                });
+        });
+    </script>
+</body>
+</html>

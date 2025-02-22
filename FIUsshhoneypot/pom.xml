@@ -41,6 +41,13 @@
         <version>1.4.11</version>
     </dependency>
     
+    <!-- Spark Java for the web dashboard -->
+    <dependency>
+        <groupId>com.sparkjava</groupId>
+        <artifactId>spark-core</artifactId>
+        <version>2.9.4</version>
+    </dependency>
+    
   </dependencies>
 
     <build>

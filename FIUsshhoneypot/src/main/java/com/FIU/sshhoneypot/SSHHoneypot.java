@@ -101,6 +101,10 @@ public class SSHHoneypot {
 
         // Start the SSH server
         sshd.start();
+        
+        // 2) Start the web dashboard
+        WebDashboard.startServer();
+        
         System.out.println("SSH Honeypot listening on port 2224...");
         logger.info("SSH Honeypot listening on port 2224...");
 
