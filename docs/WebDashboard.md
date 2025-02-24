@@ -1,11 +1,12 @@
 1. Added Spark Java web framework dependency in pom.xml: (maven project configuration)
 
-
+<pre> ```xml
     <dependency>
         <groupId>com.sparkjava</groupId>
         <artifactId>spark-core</artifactId>
         <version>2.9.4</version>
     </dependency>
+```</pre>
 
 (maven will download Spark during compilation)
 
