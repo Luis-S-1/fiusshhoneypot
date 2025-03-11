@@ -37,12 +37,21 @@ import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.TimeZone;
 
+//The following are for implementing the cat command.
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
 /**
  * SSH Honeypot using Apache MINA SSHD 2.10.0
  */
 public class SSHHoneypot {
 
     private static final Logger logger = LoggerFactory.getLogger(SSHHoneypot.class);
+    
+    // Real directory storing files for the honeypot intruder
+    private static final String HONEYFILES_DIR = "src/main/java/com/FIU/sshhoneypot/honeyfiles";
+
 
     // Max login attempts
     private static final int MAX_ATTEMPTS = 3;
@@ -143,7 +152,7 @@ public class SSHHoneypot {
             // Populating 'fake' directories
             FILESYSTEM.put("/root", new String[]{"Desktop", "Documents", "Downloads", "Music", "Pictures", "Videos"});
             FILESYSTEM.put("/root/Desktop", new String[]{"notes.txt"});
-            FILESYSTEM.put("/root/Documents", new String[]{"CompanySecrets.pdf", "Project"});
+            FILESYSTEM.put("/root/Documents", new String[]{"CompanySecrets.pdf", "Project", "secrets_readme.txt"});
             FILESYSTEM.put("/root/Documents/Project", new String[]{"README.md"});
             FILESYSTEM.put("/root/Downloads", new String[]{"Install.sh"});
             FILESYSTEM.put("/root/Music", new String[]{}); //an empty 'directory'
@@ -258,7 +267,57 @@ public class SSHHoneypot {
                         logger.info("User typed: {}", line);
                         writeLine("1  history");
                         //We could change this to accurately track command history.
-                    }     
+                    }
+                    else if ("id".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        writeLine("uid=0(root) gid=0(root) groups=0(root)");
+                    }
+                    else if ("ps".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        writeLine("PID TTY          TIME CMD");
+                        writeLine("945 pts/0    00:00:00 bash");
+                        writeLine("002 pts/0    00:00:00 ps");
+                    }
+                    else if ("ps -ef".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        writeLine("UID          PID    PPID  C STIME TTY          TIME CMD");
+                        writeLine("root           1       0  0 03:00 ?        00:00:51 systemd");
+                        writeLine("root         502       1  0 03:00 ?        00:00:00 systemd-journald");
+                        writeLine("root         534       1  0 03:00 ?        00:00:00 systemd-udevd");
+                        writeLine("root         705       1  0 03:00 ?        00:00:00 NetworkManager");
+                        writeLine("root         712       1  0 03:00 ?        00:00:00 firewalld");
+                        writeLine("root         745       1  0 03:00 ?        00:00:02 fail2ban-server --execstart /usr/bin/fail2ban-server");
+                        writeLine("root         810       1  0 03:00 ?        00:00:01 wazuh-agent");
+                        writeLine("root         811       1  0 03:00 ?        00:00:02 suricata -c /etc/suricata/suricata.yaml -D");
+                        writeLine("root         945     811  0 03:10 pts/0    00:00:00 bash");
+                        writeLine("root         002     945  0 03:11 pts/0    00:00:00 ps");
+                    }
+                    else if ("cat secrets_readme.txt".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        
+                        String fileName = HONEYFILES_DIR+"/secrets_readme.txt"; //path to the text file
+                        
+                        if(currentDirectory.equals("/root/Documents")) {
+                            try (FileReader fileReader = new FileReader(fileName); BufferedReader br = new BufferedReader(fileReader))
+                            {
+                            String lineOfTextFile;
+                            //We read the text file line by line. readLine() returns null when it reaches the end of the file
+                                while ((lineOfTextFile = br.readLine()) != null) 
+                                {
+                                    writeLine(lineOfTextFile); //display to screen
+                                }
+                            } 
+                            catch (IOException e) 
+                            {
+                                e.printStackTrace();
+                            }
+                        
+                        }
+                        else{
+                                writeLine("cat: secrets_readme.txt: No such file or directory");
+                            }
+                        
+                    }        
                     else if (!line.isEmpty()) {
                         logger.info("User typed command: {}", line);
                         writeLine("bash: " + line + ": command not found");
