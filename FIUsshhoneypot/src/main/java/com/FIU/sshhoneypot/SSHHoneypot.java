@@ -150,6 +150,31 @@ public class SSHHoneypot {
 
         static {
             // Populating 'fake' directories
+            
+            //populating filesystem root directory: 
+            FILESYSTEM.put("/", new String[]{"bin", "dev", "home", "lib64", "mnt", "proc", "root", "tmp", "usr", "var", "boot", "etc", "lib", "media", "opt", "sbin", "sys"});
+            FILESYSTEM.put("/bin", new String[]{});
+            FILESYSTEM.put("/dev", new String[]{});
+            FILESYSTEM.put("/home", new String[]{});
+            FILESYSTEM.put("/lib64", new String[]{});
+            FILESYSTEM.put("/mnt", new String[]{});
+            FILESYSTEM.put("/proc", new String[]{});
+            FILESYSTEM.put("/tmp", new String[]{});
+            FILESYSTEM.put("/usr", new String[]{});
+            FILESYSTEM.put("/var", new String[]{});
+            FILESYSTEM.put("/boot", new String[]{"config-4.18.0-348.el8.x86_64","efi","grub2","initramfs-0-rescue-fbfbc8aac4d04623a96a8dc43deea6ce.img","initramfs-4.18.0-348.el8.x86_64.img","initramfs-4.18.0-348.el8.x86_64kdump.img","loader","symvers-4.18.0-348.el8.x86_64.gz","System.map-4.18.0-348.el8.x86_64","vmlinuz-0-rescue-fbfbc8aac4d04623a96a8dc43deea6ce","vmlinuz-4.18.0-348.el8.x86_64"});
+            FILESYSTEM.put("/etc", new String[]{});
+            FILESYSTEM.put("/lib", new String[]{});
+            FILESYSTEM.put("/media", new String[]{});
+            FILESYSTEM.put("/opt", new String[]{});
+            FILESYSTEM.put("/sbin", new String[]{});
+            FILESYSTEM.put("/sys", new String[]{});
+            
+            //populating some of the filesystem root subdirectories:
+            FILESYSTEM.put("/boot/efi", new String[]{});
+            FILESYSTEM.put("/boot/grub2", new String[]{});
+            FILESYSTEM.put("/boot/loader", new String[]{});
+            //populating root user home directory:
             FILESYSTEM.put("/root", new String[]{"Desktop", "Documents", "Downloads", "Music", "Pictures", "Videos"});
             FILESYSTEM.put("/root/Desktop", new String[]{"notes.txt"});
             FILESYSTEM.put("/root/Documents", new String[]{"CompanySecrets.pdf", "Project", "secrets_readme.txt"});
@@ -212,126 +237,126 @@ public class SSHHoneypot {
         @Override
         public void run() {
             try {
-                // Print welcome
-                writeLine("Welcome to CentOS 8!");
-                writeLine("Please report any issues or missing software to Some@Company.org");
+                    // Print welcome
+                    writeLine("Welcome to CentOS 8!");
+                    writeLine("Please report any issues or missing software to Some@Company.org");
 
-                while (running) {
-                    
-                    //get the appropriate shell prompt based on the current directory
-                    write(getPrompt());
-                    out.flush();
+                    while (running) {
+                        
+                        //get the appropriate shell prompt based on the current directory
+                        write(getPrompt());
+                        out.flush();
 
-                    // Read line of user input with echo + backspace handling
-                    String line = readLineWithEcho();
-                    if (line == null) {
-                        // client disconnected
-                        break;
-                    }
-                    line = line.trim();
-
-                    // Evaluate user input:
-                    if ("exit".equalsIgnoreCase(line)) {
-                        break;
-                    }
-                    else if (line.startsWith("cd")) {
-                        logger.info("User typed: {}", line);
-                        CdCommand(line);
-                    } 
-                    else if ("ls".equalsIgnoreCase(line)) {
-                        //directory listing
-                        logger.info("User typed: {}", line);
-                        LsCommand();
-                    } else if ("uname".equalsIgnoreCase(line)) {
-                        //output of uname
-                        logger.info("User typed: {}", line);
-                        writeLine("Linux");
-                    } else if ("uname -a".equalsIgnoreCase(line)) {
-                        //output of uname -a
-                        logger.info("User typed: {}", line);
-                        writeLine(getUname());
-                    }
-                    else if ("hostname".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine("Company");
-                    }
-                    else if ("whoami".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine("root");
-                    }
-                    else if ("pwd".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine(currentDirectory);
-                    }
-                    else if ("history".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine("1  history");
-                        //We could change this to accurately track command history.
-                    }
-                    else if ("id".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine("uid=0(root) gid=0(root) groups=0(root)");
-                    }
-                    else if ("ps".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine("PID TTY          TIME CMD");
-                        writeLine("945 pts/0    00:00:00 bash");
-                        writeLine("002 pts/0    00:00:00 ps");
-                    }
-                    else if ("ps -ef".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine("UID          PID    PPID  C STIME TTY          TIME CMD");
-                        writeLine("root           1       0  0 03:00 ?        00:00:51 systemd");
-                        writeLine("root         502       1  0 03:00 ?        00:00:00 systemd-journald");
-                        writeLine("root         534       1  0 03:00 ?        00:00:00 systemd-udevd");
-                        writeLine("root         705       1  0 03:00 ?        00:00:00 NetworkManager");
-                        writeLine("root         712       1  0 03:00 ?        00:00:00 firewalld");
-                        writeLine("root         745       1  0 03:00 ?        00:00:02 fail2ban-server --execstart /usr/bin/fail2ban-server");
-                        writeLine("root         810       1  0 03:00 ?        00:00:01 wazuh-agent");
-                        writeLine("root         811       1  0 03:00 ?        00:00:02 suricata -c /etc/suricata/suricata.yaml -D");
-                        writeLine("root         945     811  0 03:10 pts/0    00:00:00 bash");
-                        writeLine("root         002     945  0 03:11 pts/0    00:00:00 ps");
-                    }
-                    else if ("cat secrets_readme.txt".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        
-                        String fileName = HONEYFILES_DIR+"/secrets_readme.txt"; //path to the text file
-                        
-                        if(currentDirectory.equals("/root/Documents")) {
-                            try (FileReader fileReader = new FileReader(fileName); BufferedReader br = new BufferedReader(fileReader))
-                            {
-                            String lineOfTextFile;
-                            //We read the text file line by line. readLine() returns null when it reaches the end of the file
-                                while ((lineOfTextFile = br.readLine()) != null) 
-                                {
-                                    writeLine(lineOfTextFile); //display to screen
-                                }
-                            } 
-                            catch (IOException e) 
-                            {
-                                e.printStackTrace();
-                            }
-                        
+                        // Read line of user input with echo + backspace handling
+                        String line = readLineWithEcho();
+                        if (line == null) {
+                            // client disconnected
+                            break;
                         }
-                        else{
-                                writeLine("cat: secrets_readme.txt: No such file or directory");
-                            }
-                        
-                    }        
-                    else if (!line.isEmpty()) {
-                        logger.info("User typed command: {}", line);
-                        writeLine("bash: " + line + ": command not found");
-                    }
-                }
+                        line = line.trim();
 
-            } catch (IOException e) {
-                logger.error("IOException in shell: " + e.getMessage());
-            } finally {
-                if (exitCallback != null) {
-                    exitCallback.onExit(0);
+                        // Evaluate user input:
+                        if ("exit".equalsIgnoreCase(line)) {
+                            break;
+                        }
+                        else if (line.startsWith("cd")) {
+                            logger.info("User typed: {}", line);
+                            CdCommand(line);
+                        } 
+                        else if ("ls".equalsIgnoreCase(line)) {
+                            //directory listing
+                            logger.info("User typed: {}", line);
+                            LsCommand();
+                        } else if ("uname".equalsIgnoreCase(line)) {
+                            //output of uname
+                            logger.info("User typed: {}", line);
+                            writeLine("Linux");
+                        } else if ("uname -a".equalsIgnoreCase(line)) {
+                            //output of uname -a
+                            logger.info("User typed: {}", line);
+                            writeLine(getUname());
+                        }
+                        else if ("hostname".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine("Company");
+                        }
+                        else if ("whoami".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine("root");
+                        }
+                        else if ("pwd".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine(currentDirectory);
+                        }
+                        else if ("history".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine("1  history");
+                            //We could change this to accurately track command history.
+                        }
+                        else if ("id".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine("uid=0(root) gid=0(root) groups=0(root)");
+                        }
+                        else if ("ps".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine("PID TTY          TIME CMD");
+                            writeLine("945 pts/0    00:00:00 bash");
+                            writeLine("002 pts/0    00:00:00 ps");
+                        }
+                        else if ("ps -ef".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine("UID          PID    PPID  C STIME TTY          TIME CMD");
+                            writeLine("root           1       0  0 03:00 ?        00:00:51 systemd");
+                            writeLine("root         502       1  0 03:00 ?        00:00:00 systemd-journald");
+                            writeLine("root         534       1  0 03:00 ?        00:00:00 systemd-udevd");
+                            writeLine("root         705       1  0 03:00 ?        00:00:00 NetworkManager");
+                            writeLine("root         712       1  0 03:00 ?        00:00:00 firewalld");
+                            writeLine("root         745       1  0 03:00 ?        00:00:02 fail2ban-server --execstart /usr/bin/fail2ban-server");
+                            writeLine("root         810       1  0 03:00 ?        00:00:01 wazuh-agent");
+                            writeLine("root         811       1  0 03:00 ?        00:00:02 suricata -c /etc/suricata/suricata.yaml -D");
+                            writeLine("root         945     811  0 03:10 pts/0    00:00:00 bash");
+                            writeLine("root         002     945  0 03:11 pts/0    00:00:00 ps");
+                        }
+                        else if ("cat secrets_readme.txt".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            
+                            String fileName = HONEYFILES_DIR+"/secrets_readme.txt"; //path to the text file
+                            
+                            if(currentDirectory.equals("/root/Documents")) {
+                                try (FileReader fileReader = new FileReader(fileName); BufferedReader br = new BufferedReader(fileReader))
+                                {
+                                String lineOfTextFile;
+                                //We read the text file line by line. readLine() returns null when it reaches the end of the file
+                                    while ((lineOfTextFile = br.readLine()) != null) 
+                                    {
+                                        writeLine(lineOfTextFile); //display to screen
+                                    }
+                                } 
+                                catch (IOException e) 
+                                {
+                                    e.printStackTrace();
+                                }
+                            
+                            }
+                            else{
+                                    writeLine("cat: secrets_readme.txt: No such file or directory");
+                                }
+                            
+                        }        
+                        else if (!line.isEmpty()) {
+                            logger.info("User typed command: {}", line);
+                            writeLine("bash: " + line + ": command not found");
+                        }
+                    }
+
+                } catch (IOException e) {
+                    logger.error("IOException in shell: " + e.getMessage());
+                } finally {
+                    if (exitCallback != null) {
+                        exitCallback.onExit(0);
+                    }
                 }
             }
-        }
         
         //get the appropriate shell prompt based on the current directory
         private String getPrompt() {
@@ -382,20 +407,26 @@ public class SSHHoneypot {
         
         // Going up one level. 'cd ..'
         private String goUpOneLevel(String path) {
-            // If at / or /root, don't allow going higher.
-            if ("/".equals(path) || "/root".equals(path)) {
-                return "/root";
+            
+            // the root / path is the highest level:
+            if ("/".equals(path)) {
+                return "/";
             }
+
+            // Otherwise, find the last slash
             int lastSlash = path.lastIndexOf('/');
             if (lastSlash <= 0) {
-                // fallback if somehow not found
-                return "/root";
+                // If somehow not found, go to /
+                return "/";
             }
-            return path.substring(0, lastSlash);
+            //return the path for the level above the current one:
+            return path.substring(0, lastSlash); 
         }
+
         
         //Process the ls command
-        private void LsCommand() throws IOException {
+        //This is a simpler version of LsCommand() to fall back to if needed:
+        /*private void LsCommand() throws IOException {
             String[] items = FILESYSTEM.get(currentDirectory);
             if (items == null || items.length == 0) {
                 // no items
@@ -404,7 +435,49 @@ public class SSHHoneypot {
                 // Join them with spaces
                 writeLine(String.join("    ", items));
             }
+        } */
+        
+        //better version of LsCommand() that attempts to print in a more organized manner, with columns.
+        private void LsCommand() throws IOException {
+            String[] items = FILESYSTEM.get(currentDirectory);
+            if (items == null || items.length == 0) {
+                writeLine("");
+                return;
+            }
+
+            // 1) Find the widest item
+            int maxLen = 0;
+            for (String item : items) {
+                if (item.length() > maxLen) {
+                    maxLen = item.length();
+                }
+            }
+
+            // 2) Add some spacing
+            // so "Column width" = widest-item-length + 3 spaces
+            int colWidth = maxLen + 3;
+
+            // 3) Find how many columns fit in 80 chars, minimum of 1
+            int screenWidth = 80;
+            int numColumns = Math.max(1, screenWidth / colWidth);
+
+            // 4) Print items in columns
+            StringBuilder line = new StringBuilder();
+            int count = 0;
+            for (int i = 0; i < items.length; i++) {
+                // Left-align the item within colWidth
+                line.append(String.format("%-" + colWidth + "s", items[i]));
+                count++;
+
+                // If we’ve filled a row or hit the end, output that row
+                if (count == numColumns || i == items.length - 1) {
+                    writeLine(line.toString());
+                    line.setLength(0);
+                    count = 0;
+                }
+            }
         }
+
 
         /**
          * Reads a line from the user, echoing each character and handling backspace.
