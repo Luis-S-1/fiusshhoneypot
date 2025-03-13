@@ -237,9 +237,8 @@ public class SSHHoneypot {
         @Override
         public void run() {
             try {
-                    // Print welcome
-                    writeLine("Welcome to CentOS 8!");
-                    writeLine("Please report any issues or missing software to Some@Company.org");
+                    // Print welcome banner
+                    printBanner();
 
                     while (running) {
                         
@@ -519,6 +518,38 @@ public class SSHHoneypot {
             return sb.toString();
         }
 
+        //print the welcome banner:
+        private void printBanner() throws IOException{
+                
+                writeLine("***************************************************************");
+                writeLine("*                                                             *");
+                writeLine("*                    **** NOTICE ****                         *");
+                writeLine("*                                                             *");
+                writeLine("***************************************************************");
+                writeLine("     /\\");
+                writeLine("    /  \\");
+                writeLine("   /____\\");
+                writeLine("  /\\    /\\");
+                writeLine(" /  \\  /  \\");
+                writeLine("/____\\/____\\");
+                writeLine("");
+                writeLine("Welcome to the Palisade Bank Corporation secure access system.");
+                writeLine("This system is for use by authorized personnel only. Unauthorized");
+                writeLine("access or use of this system is strictly prohibited and may lead");
+                writeLine("to legal consequences, including prosecution under applicable laws.");
+                writeLine("");
+                writeLine("All activities on this system are subject to monitoring, logging,");
+                writeLine("and auditing. By continuing, you acknowledge that you have no");
+                writeLine("expectation of privacy while using this system. Any evidence of");
+                writeLine("unauthorized access or misuse will be reported to security");
+                writeLine("personnel and law enforcement authorities.");
+                writeLine("");
+                writeLine("If you do not agree to these terms, please log off immediately.");
+                writeLine("");
+                writeLine("***************************************************************");
+                writeLine("");
+            }
+            
         // Helper methods to write to output
         private void writeLine(String msg) throws IOException {
             write(msg + "\r\n");

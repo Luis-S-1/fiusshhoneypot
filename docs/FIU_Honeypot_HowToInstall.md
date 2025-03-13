@@ -26,13 +26,14 @@ git clone https://github.com/Luis-S-1/fiusshhoneypot.git
 
 then cd into FIUsshhoneypot
 
-from there do 
+from there install the project with:
 
 mvn clean install
 
 then run the project with 
 
-mvn exec:java -Dexec.mainClass="com.FIU.sshhoneypot.SSHHoneypot"
+./run.sh
+(This script will compile AND run the project)
 
 
 On your client terminal (the 'primary' pc that tries to ssh into the honeypot) you may have to run
@@ -52,12 +53,12 @@ mvn clean package
 
 then run again with
 
-mvn exec:java -Dexec.mainClass="com.FIU.sshhoneypot.SSHHoneypot"
+./run.sh
 
 
 
-
-If you're curious about how I initially created the maven project that I uploaded to github, see below:
+NOTES:
+How I initially created the maven project that I uploaded to github:
 
 I did:
 
