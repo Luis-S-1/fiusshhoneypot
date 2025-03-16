@@ -23,6 +23,7 @@ create a folder to clone the repo into, cd into it, then do
 
 git clone https://github.com/Luis-S-1/fiusshhoneypot.git
 
+If it requests a username/password you can add a Token into Github.
 
 then cd into FIUsshhoneypot
 
