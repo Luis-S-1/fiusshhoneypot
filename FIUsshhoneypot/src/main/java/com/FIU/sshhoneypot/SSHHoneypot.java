@@ -630,7 +630,7 @@ public class SSHHoneypot {
         File realFile = new File(realFilePath);
         if (!realFile.exists()) {
             // The file is not in honeyfiles directory:
-            writeLine("cat: " + itemName + ": No such file or directory in the honeypot");
+            writeLine("cat: " + itemName + ": No such file or directory");
             return;
         }
 
