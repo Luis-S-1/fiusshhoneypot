@@ -153,7 +153,11 @@ public class SSHHoneypot {
             
             //populating filesystem root directory: 
             FILESYSTEM.put("/", new String[]{"bin", "dev", "home", "lib64", "mnt", "proc", "root", "tmp", "usr", "var", "boot", "etc", "lib", "media", "opt", "sbin", "sys"});
-            FILESYSTEM.put("/bin", new String[]{});
+            
+            
+            //Populate /bin by reading from bin.txt:
+            populateDirByFileRead("/bin","bin.txt");
+            
             FILESYSTEM.put("/dev", new String[]{});
             FILESYSTEM.put("/home", new String[]{});
             FILESYSTEM.put("/lib64", new String[]{});
@@ -174,6 +178,8 @@ public class SSHHoneypot {
             FILESYSTEM.put("/boot/efi", new String[]{});
             FILESYSTEM.put("/boot/grub2", new String[]{});
             FILESYSTEM.put("/boot/loader", new String[]{});
+            
+            
             //populating root user home directory:
             FILESYSTEM.put("/root", new String[]{"Desktop", "Documents", "Downloads", "Music", "Pictures", "Videos"});
             FILESYSTEM.put("/root/Desktop", new String[]{"notes.txt"});
@@ -554,89 +560,112 @@ public class SSHHoneypot {
         
         private void CatCommand(String line) throws IOException {
             
-        String[] parts = line.split("\\s+", 2);
-        if (parts.length < 2) {
-            writeLine("cat: missing operand");
-            return;
-        }
-
-        String target = parts[1]; // this should be the file name.
-
-        // 1) Resolve target as absolute or relative path.
-        String resolvedPath;
-        if (target.startsWith("/")) {
-            resolvedPath = target; 
-        } else {
-            // relative to currentDirectory
-            resolvedPath = currentDirectory.equals("/") 
-                ? "/" + target 
-                : currentDirectory + "/" + target;
-        }
-
-        // 2) Check if the parent directory of resolvedPath exists in FILESYSTEM
-        //    Also figure out the "filename" portion, because if, for example, we have “cat /root/Documents/notes.txt”
-        //    then the parent is "/root/Documents" and the item is "notes.txt"
-        int lastSlash = resolvedPath.lastIndexOf('/');
-        if (lastSlash < 0) {
-            // fallback, no '/' found, treat currentDirectory as parent
-            writeLine("cat: " + target + ": No such file or directory");
-            return;
-        }
-
-        String parentPath = resolvedPath.substring(0, lastSlash); 
-        if (parentPath.isEmpty()) {
-            parentPath = "/"; 
-        }
-        String itemName = resolvedPath.substring(lastSlash + 1);
-
-        // If there's no itemName at all, user typed something invalid
-        if (itemName.isEmpty()) {
-            writeLine("cat: " + target + ": No such file or directory");
-            return;
-        }
-
-        // 3) Check if the parent directory is known
-        String[] contents = FILESYSTEM.get(parentPath);
-        if (contents == null) {
-            writeLine("cat: " + target + ": No such file or directory");
-            return;
-        }
-
-        // 4) Check if that item is in the parent's contents
-        boolean found = false;
-        for (String c : contents) {
-            if (c.equals(itemName)) {
-                found = true;
-                break;
+            String[] parts = line.split("\\s+", 2);
+            if (parts.length < 2) {
+                writeLine("cat: missing operand");
+                return;
             }
-        }
-        if (!found) {
-            // itemName not in that directory
-            writeLine("cat: " + itemName + ": No such file or directory");
-            return;
-        }
 
-        // 5) If the “resolvedPath” is itself a directory, that means
-        //    FILESYSTEM.containsKey(resolvedPath). If it is there, it’s a dir
-        if (FILESYSTEM.containsKey(resolvedPath)) {
-            // This path is a directory
-            writeLine("cat: " + itemName + ": Is a directory");
-            return;
+            String target = parts[1]; // this should be the file name.
+
+            // 1) Resolve target as absolute or relative path.
+            String resolvedPath;
+            if (target.startsWith("/")) {
+                resolvedPath = target; 
+            } else {
+                // relative to currentDirectory
+                resolvedPath = currentDirectory.equals("/") 
+                    ? "/" + target 
+                    : currentDirectory + "/" + target;
+            }
+
+            // 2) Check if the parent directory of resolvedPath exists in FILESYSTEM
+            //    Also figure out the "filename" portion, because if, for example, we have “cat /root/Documents/notes.txt”
+            //    then the parent is "/root/Documents" and the item is "notes.txt"
+            int lastSlash = resolvedPath.lastIndexOf('/');
+            if (lastSlash < 0) {
+                // fallback, no '/' found, treat currentDirectory as parent
+                writeLine("cat: " + target + ": No such file or directory");
+                return;
+            }
+
+            String parentPath = resolvedPath.substring(0, lastSlash); 
+            if (parentPath.isEmpty()) {
+                parentPath = "/"; 
+            }
+            String itemName = resolvedPath.substring(lastSlash + 1);
+
+            // If there's no itemName at all, user typed something invalid
+            if (itemName.isEmpty()) {
+                writeLine("cat: " + target + ": No such file or directory");
+                return;
+            }
+
+            // 3) Check if the parent directory is known
+            String[] contents = FILESYSTEM.get(parentPath);
+            if (contents == null) {
+                writeLine("cat: " + target + ": No such file or directory");
+                return;
+            }
+
+            // 4) Check if that item is in the parent's contents
+            boolean found = false;
+            for (String c : contents) {
+                if (c.equals(itemName)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                // itemName not in that directory
+                writeLine("cat: " + itemName + ": No such file or directory");
+                return;
+            }
+
+            // 5) If the “resolvedPath” is itself a directory, that means
+            //    FILESYSTEM.containsKey(resolvedPath). If it is there, it’s a dir
+            if (FILESYSTEM.containsKey(resolvedPath)) {
+                // This path is a directory
+                writeLine("cat: " + itemName + ": Is a directory");
+                return;
+            }
+
+            // 6) If we got here, it’s presumably a file. Let's read from the real file:
+            String realFilePath = HONEYFILES_DIR + "/" + itemName;
+
+            File realFile = new File(realFilePath);
+            if (!realFile.exists()) {
+                // The file is not in honeyfiles directory:
+                writeLine("cat: " + itemName + ": No such file or directory");
+                return;
+            }
+
+            // 7) Print the file
+            printFile(itemName);
         }
+        
+        //populate the fake directory by reading the contents of a text file:
+        private static void populateDirByFileRead(String dirFullPath, String file){
+            
+                        //Populate /bin:
+            try {
+                java.nio.file.Path binFilePath = java.nio.file.Paths.get(HONEYFILES_DIR, file);
+                // readAllLines returns a List<String>, one entry per line
+                java.util.List<String> lines = java.nio.file.Files.readAllLines(binFilePath);
 
-        // 6) If we got here, it’s presumably a file. Let's read from the real file:
-        String realFilePath = HONEYFILES_DIR + "/" + itemName;
+                // Convert that List<String> into a String[] for FILESYSTEM
+                String[] binContents = lines.toArray(new String[0]);
 
-        File realFile = new File(realFilePath);
-        if (!realFile.exists()) {
-            // The file is not in honeyfiles directory:
-            writeLine("cat: " + itemName + ": No such file or directory");
-            return;
+                FILESYSTEM.put(dirFullPath, binContents);
+            } catch (IOException e) {
+                // If something goes wrong reading bin.txt, handle it or log the error
+                e.printStackTrace();
+
+                // As a fallback, if you want, you could put an empty array:
+                FILESYSTEM.put("/bin", new String[0]);
+            }
+            
         }
-
-        // 7) Print the file
-        printFile(itemName);
-    }
             
         // Helper methods to write to output
         private void writeLine(String msg) throws IOException {
