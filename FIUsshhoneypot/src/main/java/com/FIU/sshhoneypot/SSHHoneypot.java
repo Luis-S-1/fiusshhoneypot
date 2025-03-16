@@ -341,7 +341,12 @@ public class SSHHoneypot {
                                     writeLine("cat: secrets_readme.txt: No such file or directory");
                                 }
                             
-                        }        
+                        }
+                        else if("netstat".equalsIgnoreCase(line)) {
+                            
+                            printFile("netstat.txt");
+                            
+                            }        
                         else if (!line.isEmpty()) {
                             logger.info("User typed command: {}", line);
                             writeLine("bash: " + line + ": command not found");
@@ -549,6 +554,25 @@ public class SSHHoneypot {
                 writeLine("***************************************************************");
                 writeLine("");
             }
+            
+        private void printFile(String fileName) throws IOException {
+                
+            String filePath = HONEYFILES_DIR+"/"+fileName; //path to the text file
+            
+            try (FileReader fileReader = new FileReader(filePath); BufferedReader br = new BufferedReader(fileReader))
+            {
+            String lineOfTextFile;
+            //We read the text file line by line. readLine() returns null when it reaches the end of the file
+                while ((lineOfTextFile = br.readLine()) != null) 
+                {
+                    writeLine(lineOfTextFile); //display to screen
+                }
+            } 
+            catch (IOException e) 
+            {
+                e.printStackTrace();
+            }
+        }
             
         // Helper methods to write to output
         private void writeLine(String msg) throws IOException {
