@@ -316,31 +316,9 @@ public class SSHHoneypot {
                             writeLine("root         945     811  0 03:10 pts/0    00:00:00 bash");
                             writeLine("root         002     945  0 03:11 pts/0    00:00:00 ps");
                         }
-                        else if ("cat secrets_readme.txt".equalsIgnoreCase(line)) {
+                        else if (line.startsWith("cat ")) {
                             logger.info("User typed: {}", line);
-                            
-                            String fileName = HONEYFILES_DIR+"/secrets_readme.txt"; //path to the text file
-                            
-                            if(currentDirectory.equals("/root/Documents")) {
-                                try (FileReader fileReader = new FileReader(fileName); BufferedReader br = new BufferedReader(fileReader))
-                                {
-                                String lineOfTextFile;
-                                //We read the text file line by line. readLine() returns null when it reaches the end of the file
-                                    while ((lineOfTextFile = br.readLine()) != null) 
-                                    {
-                                        writeLine(lineOfTextFile); //display to screen
-                                    }
-                                } 
-                                catch (IOException e) 
-                                {
-                                    e.printStackTrace();
-                                }
-                            
-                            }
-                            else{
-                                    writeLine("cat: secrets_readme.txt: No such file or directory");
-                                }
-                            
+                            CatCommand(line);
                         }
                         else if("netstat".equalsIgnoreCase(line)) {
                             
@@ -573,6 +551,92 @@ public class SSHHoneypot {
                 e.printStackTrace();
             }
         }
+        
+        private void CatCommand(String line) throws IOException {
+            
+        String[] parts = line.split("\\s+", 2);
+        if (parts.length < 2) {
+            writeLine("cat: missing operand");
+            return;
+        }
+
+        String target = parts[1]; // this should be the file name.
+
+        // 1) Resolve target as absolute or relative path.
+        String resolvedPath;
+        if (target.startsWith("/")) {
+            resolvedPath = target; 
+        } else {
+            // relative to currentDirectory
+            resolvedPath = currentDirectory.equals("/") 
+                ? "/" + target 
+                : currentDirectory + "/" + target;
+        }
+
+        // 2) Check if the parent directory of resolvedPath exists in FILESYSTEM
+        //    Also figure out the "filename" portion, because if, for example, we have “cat /root/Documents/notes.txt”
+        //    then the parent is "/root/Documents" and the item is "notes.txt"
+        int lastSlash = resolvedPath.lastIndexOf('/');
+        if (lastSlash < 0) {
+            // fallback, no '/' found, treat currentDirectory as parent
+            writeLine("cat: " + target + ": No such file or directory");
+            return;
+        }
+
+        String parentPath = resolvedPath.substring(0, lastSlash); 
+        if (parentPath.isEmpty()) {
+            parentPath = "/"; 
+        }
+        String itemName = resolvedPath.substring(lastSlash + 1);
+
+        // If there's no itemName at all, user typed something invalid
+        if (itemName.isEmpty()) {
+            writeLine("cat: " + target + ": No such file or directory");
+            return;
+        }
+
+        // 3) Check if the parent directory is known
+        String[] contents = FILESYSTEM.get(parentPath);
+        if (contents == null) {
+            writeLine("cat: " + target + ": No such file or directory");
+            return;
+        }
+
+        // 4) Check if that item is in the parent's contents
+        boolean found = false;
+        for (String c : contents) {
+            if (c.equals(itemName)) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            // itemName not in that directory
+            writeLine("cat: " + itemName + ": No such file or directory");
+            return;
+        }
+
+        // 5) If the “resolvedPath” is itself a directory, that means
+        //    FILESYSTEM.containsKey(resolvedPath). If it is there, it’s a dir
+        if (FILESYSTEM.containsKey(resolvedPath)) {
+            // This path is a directory
+            writeLine("cat: " + itemName + ": Is a directory");
+            return;
+        }
+
+        // 6) If we got here, it’s presumably a file. Let's read from the real file:
+        String realFilePath = HONEYFILES_DIR + "/" + itemName;
+
+        File realFile = new File(realFilePath);
+        if (!realFile.exists()) {
+            // The file is not in honeyfiles directory:
+            writeLine("cat: " + itemName + ": No such file or directory in the honeypot");
+            return;
+        }
+
+        // 7) Print the file
+        printFile(itemName);
+    }
             
         // Helper methods to write to output
         private void writeLine(String msg) throws IOException {
