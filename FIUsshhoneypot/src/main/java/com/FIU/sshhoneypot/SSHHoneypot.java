@@ -149,30 +149,27 @@ public class SSHHoneypot {
         private static final Map<String, String[]> FILESYSTEM = new HashMap<>();
 
         static {
-            // Populating 'fake' directories
-            
             //populating filesystem root directory: 
             FILESYSTEM.put("/", new String[]{"bin", "dev", "home", "lib64", "mnt", "proc", "root", "tmp", "usr", "var", "boot", "etc", "lib", "media", "opt", "sbin", "sys"});
             
             
-            //Populate /bin by reading from bin.txt:
+            //Populating root directories. Some are populated by reading from text files, the rest are left empty.
             populateDirByFileRead("/bin","bin.txt");
-            
-            FILESYSTEM.put("/dev", new String[]{});
-            FILESYSTEM.put("/home", new String[]{});
-            FILESYSTEM.put("/lib64", new String[]{});
+            populateDirByFileRead("/dev","dev.txt");
+            FILESYSTEM.put("/home", new String[]{});  //directory is left empty
+            populateDirByFileRead("/lib64","lib64.txt");
             FILESYSTEM.put("/mnt", new String[]{});
-            FILESYSTEM.put("/proc", new String[]{});
-            FILESYSTEM.put("/tmp", new String[]{});
-            FILESYSTEM.put("/usr", new String[]{});
-            FILESYSTEM.put("/var", new String[]{});
+            populateDirByFileRead("/proc","proc.txt");
+            populateDirByFileRead("/tmp","tmp.txt");
+            populateDirByFileRead("/usr","usr.txt");
+            populateDirByFileRead("/var","var.txt");
             FILESYSTEM.put("/boot", new String[]{"config-4.18.0-348.el8.x86_64","efi","grub2","initramfs-0-rescue-fbfbc8aac4d04623a96a8dc43deea6ce.img","initramfs-4.18.0-348.el8.x86_64.img","initramfs-4.18.0-348.el8.x86_64kdump.img","loader","symvers-4.18.0-348.el8.x86_64.gz","System.map-4.18.0-348.el8.x86_64","vmlinuz-0-rescue-fbfbc8aac4d04623a96a8dc43deea6ce","vmlinuz-4.18.0-348.el8.x86_64"});
-            FILESYSTEM.put("/etc", new String[]{});
-            FILESYSTEM.put("/lib", new String[]{});
+            populateDirByFileRead("/etc","etc.txt");
+            populateDirByFileRead("/lib","lib.txt");
             FILESYSTEM.put("/media", new String[]{});
             FILESYSTEM.put("/opt", new String[]{});
-            FILESYSTEM.put("/sbin", new String[]{});
-            FILESYSTEM.put("/sys", new String[]{});
+            populateDirByFileRead("/sbin","sbin.txt");
+            populateDirByFileRead("/sys","sys.txt");
             
             //populating some of the filesystem root subdirectories:
             FILESYSTEM.put("/boot/efi", new String[]{});

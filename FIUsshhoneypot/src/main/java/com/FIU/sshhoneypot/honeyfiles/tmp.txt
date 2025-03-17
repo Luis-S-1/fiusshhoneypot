@@ -1,0 +1,16 @@
+anaconda.log
+dbus.log
+dnf.librepo.log
+ks-script-0mtgouxy
+ks-script-et_1zr2b
+packaging.log
+program.log
+pulse-PKdhtXMmr18n
+sensitive-info.log
+systemd-private-60f6433ce75c4b2c86fc2e3f840b34a8-chronyd.service-KuQDgh
+systemd-private-60f6433ce75c4b2c86fc2e3f840b34a8-colord.service-fXmhyf
+systemd-private-60f6433ce75c4b2c86fc2e3f840b34a8-fwupd.service-C5Yduf
+systemd-private-60f6433ce75c4b2c86fc2e3f840b34a8-ModemManager.service-tg7B3e
+systemd-private-60f6433ce75c4b2c86fc2e3f840b34a8-rtkit-daemon.service-aYr9Lh
+Temp-6caacdcf-79ba-464e-8d1e-b74c8685b660
+tracker-extract-files.1000
