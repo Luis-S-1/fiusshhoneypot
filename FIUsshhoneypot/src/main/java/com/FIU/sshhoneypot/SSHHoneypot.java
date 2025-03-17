@@ -536,6 +536,7 @@ public class SSHHoneypot {
                 writeLine("");
             }
             
+        //This function can print to screen files from the honeyfiles directory:
         private void printFile(String fileName) throws IOException {
                 
             String filePath = HONEYFILES_DIR+"/"+fileName; //path to the text file
@@ -644,22 +645,20 @@ public class SSHHoneypot {
         //populate the fake directory by reading the contents of a text file:
         private static void populateDirByFileRead(String dirFullPath, String file){
             
-                        //Populate /bin:
             try {
                 java.nio.file.Path binFilePath = java.nio.file.Paths.get(HONEYFILES_DIR, file);
                 // readAllLines returns a List<String>, one entry per line
                 java.util.List<String> lines = java.nio.file.Files.readAllLines(binFilePath);
 
-                // Convert that List<String> into a String[] for FILESYSTEM
+                // Convert the List<String> into a String[] for FILESYSTEM
                 String[] binContents = lines.toArray(new String[0]);
 
                 FILESYSTEM.put(dirFullPath, binContents);
             } catch (IOException e) {
-                // If something goes wrong reading bin.txt, handle it or log the error
                 e.printStackTrace();
 
-                // As a fallback, if you want, you could put an empty array:
-                FILESYSTEM.put("/bin", new String[0]);
+                // As a fallback we put an empty array:
+                FILESYSTEM.put(dirFullPath, new String[0]);
             }
             
         }
@@ -677,14 +676,14 @@ public class SSHHoneypot {
         }
         
         private String getUname() {
-        // Define system properties
+        // Define system properties consistent with Centos 8.
         String hostname = "pbc-svr04";
         String kernelVersion = "4.18.0-553.33.1.el8_10.x86_64";
         String arch = "x86_64 x86_64 x86_64 GNU/Linux";
 
         // Get current date in the expected format for uname command
         ZonedDateTime now = ZonedDateTime.now(TimeZone.getTimeZone("EST").toZoneId());
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss 'UTC' yyyy", Locale.ENGLISH);
         String formattedDate = now.format(formatter);
 
         // Construct uname -a output
