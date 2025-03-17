@@ -280,7 +280,7 @@ public class SSHHoneypot {
                         }
                         else if ("hostname".equalsIgnoreCase(line)) {
                             logger.info("User typed: {}", line);
-                            writeLine("Company");
+                            writeLine("pbc-svr04");
                         }
                         else if ("whoami".equalsIgnoreCase(line)) {
                             logger.info("User typed: {}", line);
@@ -346,12 +346,12 @@ public class SSHHoneypot {
         //get the appropriate shell prompt based on the current directory
         private String getPrompt() {
             if ("/root".equals(currentDirectory)) {
-                return "root@Company:~# ";
+                return "root@pbc-svr04:~# ";
             } else if (currentDirectory.startsWith("/root/")) {
                 String subPath = currentDirectory.substring("/root".length()); //subpath is everything after "/root" in the string
-                return "root@Company:~" + subPath + "# "; //prepend ~ and add # at the end.
+                return "root@pbc-svr04:~" + subPath + "# "; //prepend ~ and add # at the end.
             } else {
-                return "root@Company:" + currentDirectory + "# ";
+                return "root@pbc-svr04:" + currentDirectory + "# ";
             }
         }
 
@@ -678,7 +678,7 @@ public class SSHHoneypot {
         
         private String getUname() {
         // Define system properties
-        String hostname = "Company";
+        String hostname = "pbc-svr04";
         String kernelVersion = "4.18.0-553.33.1.el8_10.x86_64";
         String arch = "x86_64 x86_64 x86_64 GNU/Linux";
 
