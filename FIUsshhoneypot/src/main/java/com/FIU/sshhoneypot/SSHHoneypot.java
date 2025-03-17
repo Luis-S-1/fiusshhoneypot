@@ -10,7 +10,6 @@ Data includes any credentials used to log in, IP addresses, and any activity aft
  Due Date  : 04/28/2025 
  
 *********************************************************************/
-
 package com.FIU.sshhoneypot;
 
 import org.apache.sshd.common.SshConstants;
@@ -28,30 +27,23 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.SocketAddress;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.HashMap;
-import java.util.Map;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.TimeZone;
 
-//The following are for implementing the cat command.
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-
 /**
- * SSH Honeypot using Apache MINA SSHD 2.10.0
+ * We use the Apache MINA SSHD 2.10.0 library to create an SSH server.
  */
 public class SSHHoneypot {
 
     private static final Logger logger = LoggerFactory.getLogger(SSHHoneypot.class);
     
-    // Real directory storing files for the honeypot intruder
+    // Project directory storing various files for the honeypot
     private static final String HONEYFILES_DIR = "src/main/java/com/FIU/sshhoneypot/honeyfiles";
-
 
     // Max login attempts
     private static final int MAX_ATTEMPTS = 3;
@@ -130,7 +122,7 @@ public class SSHHoneypot {
     }
 
     /**
-     * Our ShellFactory that creates a new MyShell instance for each session.
+     * ShellFactory creates a new MyShell instance for each session.
      */
     private static class MyShellFactory implements ShellFactory {
         @Override
@@ -140,55 +132,70 @@ public class SSHHoneypot {
     }
 
     /**
-     * A small shell that handles some basic commands and file tree navigation.
+     * The custom shell:
      */
     private static class MyShell implements Command, Runnable {
 
-        //Simulation of a static filesystem tree. We are mapping directories to directory content
-        // A HashMap is a data structure with key-value pairs, like a dictionary.
-        private static final Map<String, String[]> FILESYSTEM = new HashMap<>();
+        /**
+         * Simulation of a static filesystem tree. Directories are mapped to lists
+         * containing their contents (file and subdirectory names).
+         */
+        private static final Map<String, List<String>> FILESYSTEM = new HashMap<>();
 
         static {
-            //populating filesystem root directory: 
-            FILESYSTEM.put("/", new String[]{"bin", "dev", "home", "lib64", "mnt", "proc", "root", "tmp", "usr", "var", "boot", "etc", "lib", "media", "opt", "sbin", "sys"});
-            
-            
-            //Populating root directories. Some are populated by reading from text files, the rest are left empty.
-            populateDirByFileRead("/bin","bin.txt");
-            populateDirByFileRead("/dev","dev.txt");
-            FILESYSTEM.put("/home", new String[]{});  //directory is left empty
-            populateDirByFileRead("/lib64","lib64.txt");
-            FILESYSTEM.put("/mnt", new String[]{});
-            populateDirByFileRead("/proc","proc.txt");
-            populateDirByFileRead("/tmp","tmp.txt");
-            populateDirByFileRead("/usr","usr.txt");
-            populateDirByFileRead("/var","var.txt");
-            FILESYSTEM.put("/boot", new String[]{"config-4.18.0-348.el8.x86_64","efi","grub2","initramfs-0-rescue-fbfbc8aac4d04623a96a8dc43deea6ce.img","initramfs-4.18.0-348.el8.x86_64.img","initramfs-4.18.0-348.el8.x86_64kdump.img","loader","symvers-4.18.0-348.el8.x86_64.gz","System.map-4.18.0-348.el8.x86_64","vmlinuz-0-rescue-fbfbc8aac4d04623a96a8dc43deea6ce","vmlinuz-4.18.0-348.el8.x86_64"});
-            populateDirByFileRead("/etc","etc.txt");
-            populateDirByFileRead("/lib","lib.txt");
-            FILESYSTEM.put("/media", new String[]{});
-            FILESYSTEM.put("/opt", new String[]{});
-            populateDirByFileRead("/sbin","sbin.txt");
-            populateDirByFileRead("/sys","sys.txt");
-            
-            //populating some of the filesystem root subdirectories:
-            FILESYSTEM.put("/boot/efi", new String[]{});
-            FILESYSTEM.put("/boot/grub2", new String[]{});
-            FILESYSTEM.put("/boot/loader", new String[]{});
-            
-            
-            //populating root user home directory:
-            FILESYSTEM.put("/root", new String[]{"Desktop", "Documents", "Downloads", "Music", "Pictures", "Videos"});
-            FILESYSTEM.put("/root/Desktop", new String[]{"notes.txt"});
-            FILESYSTEM.put("/root/Documents", new String[]{"CompanySecrets.pdf", "Project", "secrets_readme.txt"});
-            FILESYSTEM.put("/root/Documents/Project", new String[]{"README.md"});
-            FILESYSTEM.put("/root/Downloads", new String[]{"Install.sh"});
-            FILESYSTEM.put("/root/Music", new String[]{}); //an empty 'directory'
-            FILESYSTEM.put("/root/Pictures", new String[]{});
-            FILESYSTEM.put("/root/Videos", new String[]{});
+            // Populate the fake root directory with default Centos 8 Linux subdirectories/files
+            FILESYSTEM.put("/", new ArrayList<>(Arrays.asList(
+                    "bin", "dev", "home", "lib64", "mnt", "proc", "root", "tmp",
+                    "usr", "var", "boot", "etc", "lib", "media", "opt", "sbin", "sys"
+            )));
+
+            // Populate fake directories by reading from text files.
+            populateDirByFileRead("/bin", "bin.txt");
+            populateDirByFileRead("/dev", "dev.txt");
+            FILESYSTEM.put("/home", new ArrayList<>()); // example of an empty fake directory
+            populateDirByFileRead("/lib64", "lib64.txt");
+            FILESYSTEM.put("/mnt", new ArrayList<>());
+            populateDirByFileRead("/proc", "proc.txt");
+            populateDirByFileRead("/tmp", "tmp.txt");
+            populateDirByFileRead("/usr", "usr.txt");
+            populateDirByFileRead("/var", "var.txt");
+
+            FILESYSTEM.put("/boot", new ArrayList<>(Arrays.asList(
+                    "config-4.18.0-348.el8.x86_64","efi","grub2",
+                    "initramfs-0-rescue-fbfbc8aac4d04623a96a8dc43deea6ce.img",
+                    "initramfs-4.18.0-348.el8.x86_64.img",
+                    "initramfs-4.18.0-348.el8.x86_64kdump.img",
+                    "loader","symvers-4.18.0-348.el8.x86_64.gz",
+                    "System.map-4.18.0-348.el8.x86_64",
+                    "vmlinuz-0-rescue-fbfbc8aac4d04623a96a8dc43deea6ce",
+                    "vmlinuz-4.18.0-348.el8.x86_64"
+            )));
+            populateDirByFileRead("/etc", "etc.txt");
+            populateDirByFileRead("/lib", "lib.txt");
+            FILESYSTEM.put("/media", new ArrayList<>());
+            FILESYSTEM.put("/opt", new ArrayList<>());
+            populateDirByFileRead("/sbin", "sbin.txt");
+            populateDirByFileRead("/sys", "sys.txt");
+
+            // Some subdirectories under /boot
+            FILESYSTEM.put("/boot/efi", new ArrayList<>());
+            FILESYSTEM.put("/boot/grub2", new ArrayList<>());
+            FILESYSTEM.put("/boot/loader", new ArrayList<>());
+
+            // root user home directory and subdirectories
+            FILESYSTEM.put("/root", new ArrayList<>(Arrays.asList(
+                    "Desktop", "Documents", "Downloads", "Music", "Pictures", "Videos"
+            )));
+            FILESYSTEM.put("/root/Desktop", new ArrayList<>(Collections.singletonList("notes.txt")));
+            FILESYSTEM.put("/root/Documents", new ArrayList<>(Arrays.asList("CompanySecrets.pdf", "Project", "secrets_readme.txt")));
+            FILESYSTEM.put("/root/Documents/Project", new ArrayList<>(Collections.singletonList("README.md")));
+            FILESYSTEM.put("/root/Downloads", new ArrayList<>(Collections.singletonList("Install.sh")));
+            FILESYSTEM.put("/root/Music", new ArrayList<>());
+            FILESYSTEM.put("/root/Pictures", new ArrayList<>());
+            FILESYSTEM.put("/root/Videos", new ArrayList<>());
         }
 
-        // Track the 'current directory'. Start at /root.
+        // Track the 'current working directory'. Start at /root.
         private String currentDirectory = "/root";
 
         private InputStream in;
@@ -240,122 +247,119 @@ public class SSHHoneypot {
         @Override
         public void run() {
             try {
-                    // Print welcome banner
-                    printBanner();
+                // Print welcome banner
+                printBanner();
 
-                    while (running) {
-                        
-                        //get the appropriate shell prompt based on the current directory
-                        write(getPrompt());
-                        out.flush();
+                while (running) {
+                    // Print shell prompt
+                    write(getPrompt());
+                    out.flush();
 
-                        // Read line of user input with echo + backspace handling
-                        String line = readLineWithEcho();
-                        if (line == null) {
-                            // client disconnected
-                            break;
-                        }
-                        line = line.trim();
-
-                        // Evaluate user input:
-                        if ("exit".equalsIgnoreCase(line)) {
-                            break;
-                        }
-                        else if (line.startsWith("cd")) {
-                            logger.info("User typed: {}", line);
-                            CdCommand(line);
-                        } 
-                        else if ("ls".equalsIgnoreCase(line)) {
-                            //directory listing
-                            logger.info("User typed: {}", line);
-                            LsCommand();
-                        } else if ("uname".equalsIgnoreCase(line)) {
-                            //output of uname
-                            logger.info("User typed: {}", line);
-                            writeLine("Linux");
-                        } else if ("uname -a".equalsIgnoreCase(line)) {
-                            //output of uname -a
-                            logger.info("User typed: {}", line);
-                            writeLine(getUname());
-                        }
-                        else if ("hostname".equalsIgnoreCase(line)) {
-                            logger.info("User typed: {}", line);
-                            writeLine("pbc-svr04");
-                        }
-                        else if ("whoami".equalsIgnoreCase(line)) {
-                            logger.info("User typed: {}", line);
-                            writeLine("root");
-                        }
-                        else if ("pwd".equalsIgnoreCase(line)) {
-                            logger.info("User typed: {}", line);
-                            writeLine(currentDirectory);
-                        }
-                        else if ("history".equalsIgnoreCase(line)) {
-                            logger.info("User typed: {}", line);
-                            writeLine("1  history");
-                            //We could change this to accurately track command history.
-                        }
-                        else if ("id".equalsIgnoreCase(line)) {
-                            logger.info("User typed: {}", line);
-                            writeLine("uid=0(root) gid=0(root) groups=0(root)");
-                        }
-                        else if ("ps".equalsIgnoreCase(line)) {
-                            logger.info("User typed: {}", line);
-                            writeLine("PID TTY          TIME CMD");
-                            writeLine("945 pts/0    00:00:00 bash");
-                            writeLine("002 pts/0    00:00:00 ps");
-                        }
-                        else if ("ps -ef".equalsIgnoreCase(line)) {
-                            logger.info("User typed: {}", line);
-                            writeLine("UID          PID    PPID  C STIME TTY          TIME CMD");
-                            writeLine("root           1       0  0 03:00 ?        00:00:51 systemd");
-                            writeLine("root         502       1  0 03:00 ?        00:00:00 systemd-journald");
-                            writeLine("root         534       1  0 03:00 ?        00:00:00 systemd-udevd");
-                            writeLine("root         705       1  0 03:00 ?        00:00:00 NetworkManager");
-                            writeLine("root         712       1  0 03:00 ?        00:00:00 firewalld");
-                            writeLine("root         745       1  0 03:00 ?        00:00:02 fail2ban-server --execstart /usr/bin/fail2ban-server");
-                            writeLine("root         810       1  0 03:00 ?        00:00:01 wazuh-agent");
-                            writeLine("root         811       1  0 03:00 ?        00:00:02 suricata -c /etc/suricata/suricata.yaml -D");
-                            writeLine("root         945     811  0 03:10 pts/0    00:00:00 bash");
-                            writeLine("root         002     945  0 03:11 pts/0    00:00:00 ps");
-                        }
-                        else if (line.startsWith("cat ")) {
-                            logger.info("User typed: {}", line);
-                            CatCommand(line);
-                        }
-                        else if("netstat".equalsIgnoreCase(line)) {
-                            logger.info("User typed: {}", line);
-                            printFile("netstat.txt");
-                            
-                            }        
-                        else if (!line.isEmpty()) {
-                            logger.info("User typed command: {}", line);
-                            writeLine("bash: " + line + ": command not found");
-                        }
+                    // Read line of user input
+                    String line = readLineWithEcho();
+                    if (line == null) {
+                        // client disconnected
+                        break;
+                    }
+                    line = line.trim();
+                    if (line.isEmpty()) {
+                        continue;
                     }
 
-                } catch (IOException e) {
-                    logger.error("IOException in shell: " + e.getMessage());
-                } finally {
-                    if (exitCallback != null) {
-                        exitCallback.onExit(0);
+                    // Evaluate user input:
+                    if ("exit".equalsIgnoreCase(line)) {
+                        break;
+                    }
+                    else if (line.startsWith("cd")) {
+                        logger.info("User typed: {}", line);
+                        CdCommand(line);
+                    }
+                    else if ("ls".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        LsCommand();
+                    }
+                    else if ("uname".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        writeLine("Linux");
+                    } 
+                    else if ("uname -a".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        writeLine(getUname());
+                    }
+                    else if ("hostname".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        writeLine("pbc-svr04");
+                    }
+                    else if ("whoami".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        writeLine("root");
+                    }
+                    else if ("pwd".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        writeLine(currentDirectory);
+                    }
+                    else if ("history".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        writeLine("1  history");
+                    }
+                    else if ("id".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        writeLine("uid=0(root) gid=0(root) groups=0(root)");
+                    }
+                    else if ("ps".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        writeLine("PID TTY          TIME CMD");
+                        writeLine("945 pts/0    00:00:00 bash");
+                        writeLine("002 pts/0    00:00:00 ps");
+                    }
+                    else if ("ps -ef".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        writeLine("UID          PID    PPID  C STIME TTY          TIME CMD");
+                        writeLine("root           1       0  0 03:00 ?        00:00:51 systemd");
+                        writeLine("root         502       1  0 03:00 ?        00:00:00 systemd-journald");
+                        writeLine("root         534       1  0 03:00 ?        00:00:00 systemd-udevd");
+                        writeLine("root         705       1  0 03:00 ?        00:00:00 NetworkManager");
+                        writeLine("root         712       1  0 03:00 ?        00:00:00 firewalld");
+                        writeLine("root         745       1  0 03:00 ?        00:00:02 fail2ban-server --execstart /usr/bin/fail2ban-server");
+                        writeLine("root         810       1  0 03:00 ?        00:00:01 wazuh-agent");
+                        writeLine("root         811       1  0 03:00 ?        00:00:02 suricata -c /etc/suricata/suricata.yaml -D");
+                        writeLine("root         945     811  0 03:10 pts/0    00:00:00 bash");
+                        writeLine("root         002     945  0 03:11 pts/0    00:00:00 ps");
+                    }
+                    else if (line.startsWith("cat ")) {
+                        logger.info("User typed: {}", line);
+                        CatCommand(line);
+                    }
+                    else if ("netstat".equalsIgnoreCase(line)) {
+                        logger.info("User typed: {}", line);
+                        printFile("netstat.txt");
+                    }
+                    else if (line.startsWith("mkdir ")) {
+                        logger.info("User typed: {}", line);
+                        mkdirCommand(line);
+                    }
+                    else if (line.startsWith("touch ")) {
+                        logger.info("User typed: {}", line);
+                        touchCommand(line);
+                    }
+                    // if user entered unknown command:
+                    else {
+                        logger.info("User typed command: {}", line);
+                        writeLine("bash: " + line + ": command not found");
                     }
                 }
-            }
-        
-        //get the appropriate shell prompt based on the current directory
-        private String getPrompt() {
-            if ("/root".equals(currentDirectory)) {
-                return "root@pbc-svr04:~# ";
-            } else if (currentDirectory.startsWith("/root/")) {
-                String subPath = currentDirectory.substring("/root".length()); //subpath is everything after "/root" in the string
-                return "root@pbc-svr04:~" + subPath + "# "; //prepend ~ and add # at the end.
-            } else {
-                return "root@pbc-svr04:" + currentDirectory + "# ";
+            } catch (IOException e) {
+                logger.error("IOException in shell: " + e.getMessage());
+            } finally {
+                if (exitCallback != null) {
+                    exitCallback.onExit(0);
+                }
             }
         }
 
-        //Process the cd command
+        // Helper functions:
+
+        // "cd" command
         private void CdCommand(String line) throws IOException {
             String[] parts = line.split("\\s+");
             // If no argument, go to /root
@@ -378,7 +382,7 @@ public class SSHHoneypot {
                     writeLine("bash: cd: " + target + ": No such file or directory");
                 }
             } else {
-                // If user typed a relative path, then we combine with currentDirectory
+                // If user typed a relative path, combine with currentDirectory
                 String newPath = currentDirectory.equals("/") 
                         ? "/" + target 
                         : currentDirectory + "/" + target;
@@ -389,43 +393,11 @@ public class SSHHoneypot {
                 }
             }
         }
-        
-        // Going up one level. 'cd ..'
-        private String goUpOneLevel(String path) {
-            
-            // the root / path is the highest level:
-            if ("/".equals(path)) {
-                return "/";
-            }
 
-            // Otherwise, find the last slash
-            int lastSlash = path.lastIndexOf('/');
-            if (lastSlash <= 0) {
-                // If somehow not found, go to /
-                return "/";
-            }
-            //return the path for the level above the current one:
-            return path.substring(0, lastSlash); 
-        }
-
-        
-        //Process the ls command
-        //This is a simpler version of LsCommand() to fall back to if needed:
-        /*private void LsCommand() throws IOException {
-            String[] items = FILESYSTEM.get(currentDirectory);
-            if (items == null || items.length == 0) {
-                // no items
-                writeLine("");
-            } else {
-                // Join them with spaces
-                writeLine(String.join("    ", items));
-            }
-        } */
-        
-        //better version of LsCommand() that attempts to print in a more organized manner, with columns.
+        // "ls" command
         private void LsCommand() throws IOException {
-            String[] items = FILESYSTEM.get(currentDirectory);
-            if (items == null || items.length == 0) {
+            List<String> items = FILESYSTEM.get(currentDirectory);
+            if (items == null || items.isEmpty()) {
                 writeLine("");
                 return;
             }
@@ -438,24 +410,18 @@ public class SSHHoneypot {
                 }
             }
 
-            // 2) Add some spacing
-            // so "Column width" = widest-item-length + 3 spaces
+            // 2) Add spacing
             int colWidth = maxLen + 3;
-
-            // 3) Find how many columns fit in 80 chars, minimum of 1
             int screenWidth = 80;
             int numColumns = Math.max(1, screenWidth / colWidth);
 
-            // 4) Print items in columns
+            // 3) Print items in columns
             StringBuilder line = new StringBuilder();
             int count = 0;
-            for (int i = 0; i < items.length; i++) {
-                // Left-align the item within colWidth
-                line.append(String.format("%-" + colWidth + "s", items[i]));
+            for (int i = 0; i < items.size(); i++) {
+                line.append(String.format("%-" + colWidth + "s", items.get(i)));
                 count++;
-
-                // If we’ve filled a row or hit the end, output that row
-                if (count == numColumns || i == items.length - 1) {
+                if (count == numColumns || i == items.size() - 1) {
                     writeLine(line.toString());
                     line.setLength(0);
                     count = 0;
@@ -463,101 +429,8 @@ public class SSHHoneypot {
             }
         }
 
-
-        /**
-         * Reads a line from the user, echoing each character and handling backspace.
-         * Returns null if the stream closes (client disconnected).
-         */
-        private String readLineWithEcho() throws IOException {
-            StringBuilder sb = new StringBuilder();
-            while (true) {
-                int ch = in.read();
-                if (ch == -1) {
-                    // End of stream
-                    return null;
-                }
-
-                // Handle Enter
-                if (ch == '\n' || ch == '\r') {
-                    // Some clients send \r, some send \n, or \r\n
-                    // We'll treat both as "Enter"
-                    write("\r\n"); // Echo newline
-                    break;
-                }
-                // Handle backspace (ASCII 8 or 127)
-                else if (ch == 8 || ch == 127) {
-                    if (sb.length() > 0) {
-                        sb.deleteCharAt(sb.length() - 1);
-                        // Move cursor back one, overwrite with space, move back again
-                        write("\b \b");
-                    }
-                }
-                else {
-                    // Echo typed character
-                    out.write(ch);
-                    out.flush();
-
-                    // Add to our input buffer
-                    sb.append((char) ch);
-                }
-            }
-            return sb.toString();
-        }
-
-        //print the welcome banner:
-        private void printBanner() throws IOException{
-                
-                writeLine("***************************************************************");
-                writeLine("*                                                             *");
-                writeLine("*                    **** NOTICE ****                         *");
-                writeLine("*                                                             *");
-                writeLine("***************************************************************");
-                writeLine("     /\\");
-                writeLine("    /  \\");
-                writeLine("   /____\\");
-                writeLine("  /\\    /\\");
-                writeLine(" /  \\  /  \\");
-                writeLine("/____\\/____\\");
-                writeLine("");
-                writeLine("Welcome to the Palisade Bank Corporation secure access system.");
-                writeLine("This system is for use by authorized personnel only. Unauthorized");
-                writeLine("access or use of this system is strictly prohibited and may lead");
-                writeLine("to legal consequences, including prosecution under applicable laws.");
-                writeLine("");
-                writeLine("All activities on this system are subject to monitoring, logging,");
-                writeLine("and auditing. By continuing, you acknowledge that you have no");
-                writeLine("expectation of privacy while using this system. Any evidence of");
-                writeLine("unauthorized access or misuse will be reported to security");
-                writeLine("personnel and law enforcement authorities.");
-                writeLine("");
-                writeLine("If you do not agree to these terms, please log off immediately.");
-                writeLine("");
-                writeLine("***************************************************************");
-                writeLine("");
-            }
-            
-        //This function can print to screen files from the honeyfiles directory:
-        private void printFile(String fileName) throws IOException {
-                
-            String filePath = HONEYFILES_DIR+"/"+fileName; //path to the text file
-            
-            try (FileReader fileReader = new FileReader(filePath); BufferedReader br = new BufferedReader(fileReader))
-            {
-            String lineOfTextFile;
-            //We read the text file line by line. readLine() returns null when it reaches the end of the file
-                while ((lineOfTextFile = br.readLine()) != null) 
-                {
-                    writeLine(lineOfTextFile); //display to screen
-                }
-            } 
-            catch (IOException e) 
-            {
-                e.printStackTrace();
-            }
-        }
-        
+        // "cat" command
         private void CatCommand(String line) throws IOException {
-            
             String[] parts = line.split("\\s+", 2);
             if (parts.length < 2) {
                 writeLine("cat: missing operand");
@@ -566,47 +439,40 @@ public class SSHHoneypot {
 
             String target = parts[1]; // this should be the file name.
 
-            // 1) Resolve target as absolute or relative path.
+            // Resolve target as absolute or relative path.
             String resolvedPath;
             if (target.startsWith("/")) {
                 resolvedPath = target; 
             } else {
-                // relative to currentDirectory
-                resolvedPath = currentDirectory.equals("/") 
-                    ? "/" + target 
+                resolvedPath = currentDirectory.equals("/")
+                    ? "/" + target
                     : currentDirectory + "/" + target;
             }
 
-            // 2) Check if the parent directory of resolvedPath exists in FILESYSTEM
-            //    Also figure out the "filename" portion, because if, for example, we have “cat /root/Documents/notes.txt”
-            //    then the parent is "/root/Documents" and the item is "notes.txt"
+            // Figure out the parent directory of resolvedPath
             int lastSlash = resolvedPath.lastIndexOf('/');
             if (lastSlash < 0) {
-                // fallback, no '/' found, treat currentDirectory as parent
                 writeLine("cat: " + target + ": No such file or directory");
                 return;
             }
 
-            String parentPath = resolvedPath.substring(0, lastSlash); 
+            String parentPath = resolvedPath.substring(0, lastSlash);
             if (parentPath.isEmpty()) {
-                parentPath = "/"; 
+                parentPath = "/";
             }
             String itemName = resolvedPath.substring(lastSlash + 1);
-
-            // If there's no itemName at all, user typed something invalid
             if (itemName.isEmpty()) {
                 writeLine("cat: " + target + ": No such file or directory");
                 return;
             }
 
-            // 3) Check if the parent directory is known
-            String[] contents = FILESYSTEM.get(parentPath);
+            List<String> contents = FILESYSTEM.get(parentPath);
             if (contents == null) {
                 writeLine("cat: " + target + ": No such file or directory");
                 return;
             }
 
-            // 4) Check if that item is in the parent's contents
+            // check if itemName is in parent's contents
             boolean found = false;
             for (String c : contents) {
                 if (c.equals(itemName)) {
@@ -615,54 +481,179 @@ public class SSHHoneypot {
                 }
             }
             if (!found) {
-                // itemName not in that directory
                 writeLine("cat: " + itemName + ": No such file or directory");
                 return;
             }
 
-            // 5) If the “resolvedPath” is itself a directory, that means
-            //    FILESYSTEM.containsKey(resolvedPath). If it is there, it’s a dir
+            // If the path is in FILESYSTEM, it's a directory
             if (FILESYSTEM.containsKey(resolvedPath)) {
-                // This path is a directory
                 writeLine("cat: " + itemName + ": Is a directory");
                 return;
             }
 
-            // 6) If we got here, it’s presumably a file. Let's read from the real file:
+            // It's presumably a file. Read from the real file in honeyfiles:
             String realFilePath = HONEYFILES_DIR + "/" + itemName;
-
             File realFile = new File(realFilePath);
             if (!realFile.exists()) {
-                // The file is not in honeyfiles directory:
+                // The file is not found in honeyfiles directory
                 writeLine("cat: " + itemName + ": No such file or directory");
                 return;
             }
 
-            // 7) Print the file
+            // Print the file
             printFile(itemName);
         }
-        
-        //populate the fake directory by reading the contents of a text file:
-        private static void populateDirByFileRead(String dirFullPath, String file){
-            
-            try {
-                java.nio.file.Path binFilePath = java.nio.file.Paths.get(HONEYFILES_DIR, file);
-                // readAllLines returns a List<String>, one entry per line
-                java.util.List<String> lines = java.nio.file.Files.readAllLines(binFilePath);
 
-                // Convert the List<String> into a String[] for FILESYSTEM
-                String[] binContents = lines.toArray(new String[0]);
+        // "mkdir" command
+        private void mkdirCommand(String line) throws IOException {
+            String[] parts = line.split("\\s+");
+            if (parts.length < 2) {
+                writeLine("mkdir: missing operand");
+                return;
+            }
+            String target = parts[1];
 
-                FILESYSTEM.put(dirFullPath, binContents);
+            // Resolve path
+            String newPath;
+            if (target.startsWith("/")) {
+                newPath = target;
+            } else {
+                // relative
+                newPath = currentDirectory.equals("/")
+                        ? "/" + target
+                        : currentDirectory + "/" + target;
+            }
+
+            // find parent
+            int lastSlash = newPath.lastIndexOf('/');
+            if (lastSlash < 0) {
+                writeLine("mkdir: cannot create directory '" + target + "': Invalid path");
+                return;
+            }
+
+            String parentPath = newPath.substring(0, lastSlash);
+            if (parentPath.isEmpty()) {
+                parentPath = "/";
+            }
+            String dirName = newPath.substring(lastSlash + 1);
+
+            // parent must exist and must be a directory in FILESYSTEM
+            if (!FILESYSTEM.containsKey(parentPath)) {
+                writeLine("mkdir: cannot create directory '" + dirName + "': No such file or directory");
+                return;
+            }
+
+            // Check if an item with that name already exists in parent
+            List<String> parentContents = FILESYSTEM.get(parentPath);
+            if (parentContents.contains(dirName)) {
+                writeLine("mkdir: cannot create directory '" + dirName + "': File exists");
+                return;
+            }
+
+            // Add the new directory to parent's contents
+            parentContents.add(dirName);
+            // Make a new entry in FILESYSTEM for that directory
+            FILESYSTEM.put(newPath, new ArrayList<>());
+        }
+
+        // "touch" command
+        private void touchCommand(String line) throws IOException {
+            String[] parts = line.split("\\s+");
+            if (parts.length < 2) {
+                writeLine("touch: missing operand");
+                return;
+            }
+            String target = parts[1];
+
+            // Resolve path
+            String newPath;
+            if (target.startsWith("/")) {
+                newPath = target;
+            } else {
+                newPath = currentDirectory.equals("/")
+                        ? "/" + target
+                        : currentDirectory + "/" + target;
+            }
+
+            // figure out parent
+            int lastSlash = newPath.lastIndexOf('/');
+            if (lastSlash < 0) {
+                writeLine("touch: cannot touch '" + target + "': Invalid path");
+                return;
+            }
+
+            String parentPath = newPath.substring(0, lastSlash);
+            if (parentPath.isEmpty()) {
+                parentPath = "/";
+            }
+            String fileName = newPath.substring(lastSlash + 1);
+
+            if (!FILESYSTEM.containsKey(parentPath)) {
+                writeLine("touch: cannot touch '" + fileName + "': No such directory");
+                return;
+            }
+
+            // see if parent contents already has this item
+            List<String> parentContents = FILESYSTEM.get(parentPath);
+            if (!parentContents.contains(fileName)) {
+                // add the new file name
+                parentContents.add(fileName);
+            }
+            // if it already exists, do nothing.
+
+            // Physically create the file in honeyfiles directory if it doesn't exist
+            File realFile = new File(HONEYFILES_DIR, fileName);
+            if (!realFile.exists()) {
+                try {
+                    if (!realFile.createNewFile()) {
+                        // createNewFile returns false if the file already existed
+                        // But we already checked that, so this is a fallback
+                        writeLine("touch: cannot touch '" + fileName + "': Unable to create file");
+                    }
+                } catch (IOException e) {
+                    writeLine("touch: cannot touch '" + fileName + "': " + e.getMessage());
+                }
+            }
+        }
+
+        // Go up one level (for cd ..)
+        private String goUpOneLevel(String path) {
+            if ("/".equals(path)) {
+                return "/";
+            }
+            int lastSlash = path.lastIndexOf('/');
+            if (lastSlash <= 0) {
+                return "/";
+            }
+            return path.substring(0, lastSlash);
+        }
+
+        // Print a text file from honeyfiles directory to the terminal
+        private void printFile(String fileName) throws IOException {
+            String filePath = HONEYFILES_DIR + "/" + fileName;
+            try (FileReader fileReader = new FileReader(filePath);
+                 BufferedReader br = new BufferedReader(fileReader)) {
+                String lineOfTextFile;
+                while ((lineOfTextFile = br.readLine()) != null) {
+                    writeLine(lineOfTextFile);
+                }
             } catch (IOException e) {
                 e.printStackTrace();
-
-                // As a fallback we put an empty array:
-                FILESYSTEM.put(dirFullPath, new String[0]);
             }
-            
         }
-            
+
+        // populate the fake directory by reading the contents of a text file
+        private static void populateDirByFileRead(String dirFullPath, String fileName) {
+            try {
+                java.nio.file.Path binFilePath = java.nio.file.Paths.get(HONEYFILES_DIR, fileName);
+                List<String> lines = java.nio.file.Files.readAllLines(binFilePath);
+                FILESYSTEM.put(dirFullPath, new ArrayList<>(lines));
+            } catch (IOException e) {
+                e.printStackTrace();
+                FILESYSTEM.put(dirFullPath, new ArrayList<>());
+            }
+        }
+
         // Helper methods to write to output
         private void writeLine(String msg) throws IOException {
             write(msg + "\r\n");
@@ -674,20 +665,91 @@ public class SSHHoneypot {
                 out.flush();
             }
         }
-        
+
+        private String readLineWithEcho() throws IOException {
+            StringBuilder sb = new StringBuilder();
+            while (true) {
+                int ch = in.read();
+                if (ch == -1) {
+                    // End of stream
+                    return null;
+                }
+
+                if (ch == '\n' || ch == '\r') {
+                    write("\r\n");
+                    break;
+                }
+                else if (ch == 8 || ch == 127) {
+                    // Backspace
+                    if (sb.length() > 0) {
+                        sb.deleteCharAt(sb.length() - 1);
+                        // Move cursor back one, overwrite with space, move back again
+                        write("\b \b");
+                    }
+                }
+                else {
+                    out.write(ch);
+                    out.flush();
+                    sb.append((char) ch);
+                }
+            }
+            return sb.toString();
+        }
+
+        private void printBanner() throws IOException {
+            writeLine("***************************************************************");
+            writeLine("*                                                             *");
+            writeLine("*                    **** NOTICE ****                         *");
+            writeLine("*                                                             *");
+            writeLine("***************************************************************");
+            writeLine("     /\\");
+            writeLine("    /  \\");
+            writeLine("   /____\\");
+            writeLine("  /\\    /\\");
+            writeLine(" /  \\  /  \\");
+            writeLine("/____\\/____\\");
+            writeLine("");
+            writeLine("Welcome to the Palisade Bank Corporation secure access system.");
+            writeLine("This system is for use by authorized personnel only. Unauthorized");
+            writeLine("access or use of this system is strictly prohibited and may lead");
+            writeLine("to legal consequences, including prosecution under applicable laws.");
+            writeLine("");
+            writeLine("All activities on this system are subject to monitoring, logging,");
+            writeLine("and auditing. By continuing, you acknowledge that you have no");
+            writeLine("expectation of privacy while using this system. Any evidence of");
+            writeLine("unauthorized access or misuse will be reported to security");
+            writeLine("personnel and law enforcement authorities.");
+            writeLine("");
+            writeLine("If you do not agree to these terms, please log off immediately.");
+            writeLine("");
+            writeLine("***************************************************************");
+            writeLine("");
+        }
+
+        private String getPrompt() {
+            if ("/root".equals(currentDirectory)) {
+                return "root@pbc-svr04:~# ";
+            } else if (currentDirectory.startsWith("/root/")) {
+                String subPath = currentDirectory.substring("/root".length());
+                return "root@pbc-svr04:~" + subPath + "# ";
+            } else {
+                return "root@pbc-svr04:" + currentDirectory + "# ";
+            }
+        }
+
         private String getUname() {
-        // Define system properties consistent with Centos 8.
-        String hostname = "pbc-svr04";
-        String kernelVersion = "4.18.0-553.33.1.el8_10.x86_64";
-        String arch = "x86_64 x86_64 x86_64 GNU/Linux";
+            // Define system properties consistent with CentOS 8.
+            String hostname = "pbc-svr04";
+            String kernelVersion = "4.18.0-553.33.1.el8_10.x86_64";
+            String arch = "x86_64 x86_64 x86_64 GNU/Linux";
 
-        // Get current date in the expected format for uname command
-        ZonedDateTime now = ZonedDateTime.now(TimeZone.getTimeZone("EST").toZoneId());
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss 'UTC' yyyy", Locale.ENGLISH);
-        String formattedDate = now.format(formatter);
+            // Get current date in the expected format for uname command
+            ZonedDateTime now = ZonedDateTime.now(TimeZone.getTimeZone("EST").toZoneId());
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss 'UTC' yyyy", Locale.ENGLISH);
+            String formattedDate = now.format(formatter);
 
-        // Construct uname -a output
-        return String.format("Linux %s %s #1 SMP %s %s", hostname, kernelVersion, formattedDate, arch);
+            // Construct uname -a output
+            return String.format("Linux %s %s #1 SMP %s %s", hostname, kernelVersion, formattedDate, arch);
         }
     }
 }
