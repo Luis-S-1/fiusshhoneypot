@@ -324,7 +324,7 @@ public class SSHHoneypot {
                             CatCommand(line);
                         }
                         else if("netstat".equalsIgnoreCase(line)) {
-                            
+                            logger.info("User typed: {}", line);
                             printFile("netstat.txt");
                             
                             }        
