@@ -1,0 +1,30 @@
+1  ifconfig
+2  time
+3  ssh 10.23.45.67
+4  history
+5  whoami
+6  uname -a
+7  uptime
+8  cat /etc/os-release
+9  ls -lah
+10 cd /var/log
+11 cat auth.log
+12 tail -n 50 /var/log/syslog
+13 tail -f /var/log/auth.log
+14 ps aux | grep ssh
+15 netstat -tulnp
+16 iptables -L -v
+17 sudo su
+18 passwd
+19 adduser john
+20 deluser testaccount
+21 echo "10.23.45.67 devbox.internal" >> /etc/hosts
+22 ssh -i ~/.ssh/id_rsa admin@10.23.45.67
+23 ssh -p 2222 root@10.23.45.67
+24 scp client0782_accounts_2025.csv admin@10.23.45.67:/home/admin/
+25 wget http://10.23.45.67/internaltool.tar.gz
+26 curl http://10.23.45.67/configs/.ssh/id_rsa > ~/.ssh/id_rsa
+27 chmod 600 ~/.ssh/id_rsa
+28 ssh -i ~/.ssh/id_rsa admin@10.23.45.67
+29 logout
+

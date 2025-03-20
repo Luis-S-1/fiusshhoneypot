@@ -44,6 +44,9 @@ public class SSHHoneypot {
     
     // Project directory storing various files for the honeypot
     private static final String HONEYFILES_DIR = "src/main/java/com/FIU/sshhoneypot/honeyfiles";
+    
+    private static final String HISTORY_FILE_NAME = "history.txt";  // name of the file in honeyfiles directory
+    private static final int HISTORY_LIMIT = 1000;                  // history contains 1000 entries max.
 
     // Max login attempts
     private static final int MAX_ATTEMPTS = 3;
@@ -266,87 +269,101 @@ public class SSHHoneypot {
                         continue;
                     }
 
-                    // Evaluate user input:
-                    if ("exit".equalsIgnoreCase(line)) {
-                        break;
-                    }
-                    else if (line.startsWith("cd")) {
+                    //logic for history command:
+                    if (line.startsWith("history")) {
                         logger.info("User typed: {}", line);
-                        CdCommand(line);
+                        if ("history -c".equals(line)) {
+                            // Clear the history file
+                            clearHistory();
+                        } else if ("history".equals(line)) {
+                            historyCommand();  
+                        } else {
+                            historyCommand();
+                        }
                     }
-                    else if ("ls".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        LsCommand();
-                    }
-                    else if ("uname".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine("Linux");
-                    } 
-                    else if ("uname -a".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine(getUname());
-                    }
-                    else if ("hostname".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine("pbc-svr04");
-                    }
-                    else if ("whoami".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine("root");
-                    }
-                    else if ("pwd".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine(currentDirectory);
-                    }
-                    else if ("history".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine("1  history");
-                    }
-                    else if ("id".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine("uid=0(root) gid=0(root) groups=0(root)");
-                    }
-                    else if ("ps".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine("PID TTY          TIME CMD");
-                        writeLine("945 pts/0    00:00:00 bash");
-                        writeLine("002 pts/0    00:00:00 ps");
-                    }
-                    else if ("ps -ef".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        writeLine("UID          PID    PPID  C STIME TTY          TIME CMD");
-                        writeLine("root           1       0  0 03:00 ?        00:00:51 systemd");
-                        writeLine("root         502       1  0 03:00 ?        00:00:00 systemd-journald");
-                        writeLine("root         534       1  0 03:00 ?        00:00:00 systemd-udevd");
-                        writeLine("root         705       1  0 03:00 ?        00:00:00 NetworkManager");
-                        writeLine("root         712       1  0 03:00 ?        00:00:00 firewalld");
-                        writeLine("root         745       1  0 03:00 ?        00:00:02 fail2ban-server --execstart /usr/bin/fail2ban-server");
-                        writeLine("root         810       1  0 03:00 ?        00:00:01 wazuh-agent");
-                        writeLine("root         811       1  0 03:00 ?        00:00:02 suricata -c /etc/suricata/suricata.yaml -D");
-                        writeLine("root         945     811  0 03:10 pts/0    00:00:00 bash");
-                        writeLine("root         002     945  0 03:11 pts/0    00:00:00 ps");
-                    }
-                    else if (line.startsWith("cat ")) {
-                        logger.info("User typed: {}", line);
-                        CatCommand(line);
-                    }
-                    else if ("netstat".equalsIgnoreCase(line)) {
-                        logger.info("User typed: {}", line);
-                        printFile("netstat.txt");
-                    }
-                    else if (line.startsWith("mkdir ")) {
-                        logger.info("User typed: {}", line);
-                        mkdirCommand(line);
-                    }
-                    else if (line.startsWith("touch ")) {
-                        logger.info("User typed: {}", line);
-                        touchCommand(line);
-                    }
-                    // if user entered unknown command:
-                    else {
-                        logger.info("User typed command: {}", line);
-                        writeLine("bash: " + line + ": command not found");
-                    }
+                    else { //logic for all other commands:
+
+                        //record the line in history.txt
+                        recordCommand(line);
+                        
+                        // Evaluate user input:
+                        if ("exit".equalsIgnoreCase(line)) {
+                            break;
+                        }
+                        else if (line.startsWith("cd")) {
+                            logger.info("User typed: {}", line);
+                            CdCommand(line);
+                        }
+                        else if ("ls".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            LsCommand();
+                        }
+                        else if ("uname".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine("Linux");
+                        } 
+                        else if ("uname -a".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine(getUname());
+                        }
+                        else if ("hostname".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine("pbc-svr04");
+                        }
+                        else if ("whoami".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine("root");
+                        }
+                        else if ("pwd".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine(currentDirectory);
+                        }
+                        else if ("id".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine("uid=0(root) gid=0(root) groups=0(root)");
+                        }
+                        else if ("ps".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine("PID TTY          TIME CMD");
+                            writeLine("945 pts/0    00:00:00 bash");
+                            writeLine("002 pts/0    00:00:00 ps");
+                        }
+                        else if ("ps -ef".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine("UID          PID    PPID  C STIME TTY          TIME CMD");
+                            writeLine("root           1       0  0 03:00 ?        00:00:51 systemd");
+                            writeLine("root         502       1  0 03:00 ?        00:00:00 systemd-journald");
+                            writeLine("root         534       1  0 03:00 ?        00:00:00 systemd-udevd");
+                            writeLine("root         705       1  0 03:00 ?        00:00:00 NetworkManager");
+                            writeLine("root         712       1  0 03:00 ?        00:00:00 firewalld");
+                            writeLine("root         745       1  0 03:00 ?        00:00:02 fail2ban-server --execstart /usr/bin/fail2ban-server");
+                            writeLine("root         810       1  0 03:00 ?        00:00:01 wazuh-agent");
+                            writeLine("root         811       1  0 03:00 ?        00:00:02 suricata -c /etc/suricata/suricata.yaml -D");
+                            writeLine("root         945     811  0 03:10 pts/0    00:00:00 bash");
+                            writeLine("root         002     945  0 03:11 pts/0    00:00:00 ps");
+                        }
+                        else if (line.startsWith("cat ")) {
+                            logger.info("User typed: {}", line);
+                            CatCommand(line);
+                        }
+                        else if ("netstat".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            printFile("netstat.txt");
+                        }
+                        else if (line.startsWith("mkdir ")) {
+                            logger.info("User typed: {}", line);
+                            mkdirCommand(line);
+                        }
+                        else if (line.startsWith("touch ")) {
+                            logger.info("User typed: {}", line);
+                            touchCommand(line);
+                        }
+                        // if user entered unknown command:
+                        else {
+                            logger.info("User typed command: {}", line);
+                            writeLine("bash: " + line + ": command not found");
+                        }
+                    }// close logic for all other commands
                 }
             } catch (IOException e) {
                 logger.error("IOException in shell: " + e.getMessage());
@@ -357,7 +374,125 @@ public class SSHHoneypot {
             }
         }
 
-        // Helper functions:
+    // Helper functions:
+        
+        
+    //   ***helper functions for history command:***
+    /**
+     * Prints the history file, then appends a new line with the next index and
+     * the word "history". (So that the user sees that new line appear at the end.)
+     */
+    private void historyCommand() throws IOException {
+        // Read existing lines from history.txt
+        List<String> lines = loadHistory();
+
+        // Find the next index
+        int lastIndex = 0;
+        if (!lines.isEmpty()) {
+            // for the final line's index:
+            String lastLine = lines.get(lines.size() - 1);
+            int space = lastLine.indexOf(' ');
+            if (space > 0) {
+                String idxStr = lastLine.substring(0, space);
+                lastIndex = Integer.parseInt(idxStr);
+            }
+        }
+        int nextIndex = lastIndex + 1;
+
+        // Append the new line:
+        lines.add(nextIndex + " history");
+        
+        // Limit is 1000 lines:
+        while (lines.size() > HISTORY_LIMIT) {
+            lines.remove(0);
+        }
+
+        // write updated lines to history.txt
+        saveHistory(lines);
+
+        // print lines
+        for (String entry : lines) {
+            writeLine(entry);
+        }
+    }
+
+    /**
+     * Record any command other than history
+     */
+    private void recordCommand(String userCommand) throws IOException {
+        if (userCommand == null || userCommand.isEmpty()) {
+            return;
+        }
+
+        List<String> lines = loadHistory();
+        int lastIndex = 0;
+        if (!lines.isEmpty()) {
+            String lastLine = lines.get(lines.size() - 1);
+            int space = lastLine.indexOf(' ');
+            if (space > 0) {
+                String idxStr = lastLine.substring(0, space);
+                lastIndex = Integer.parseInt(idxStr);
+            }
+        }
+        int nextIndex = lastIndex + 1;
+
+        // Add new line
+        lines.add(nextIndex + " " + userCommand);
+
+        // limit is 1000
+        while (lines.size() > HISTORY_LIMIT) {
+            lines.remove(0);
+        }
+        saveHistory(lines);
+    }
+
+    /**
+     *  'history -c' deletes the history
+     */
+    private void clearHistory() throws IOException {
+        
+        List<String> emptyList = new ArrayList<>();
+        saveHistory(emptyList);
+    }
+
+    /**
+     * Load the entire history from history.txt, returning it as a List of lines.
+     */
+    private List<String> loadHistory() {
+        List<String> lines = new ArrayList<>();
+        File histFile = new File(HONEYFILES_DIR, HISTORY_FILE_NAME);
+        if (!histFile.exists()) {
+            
+            return lines;
+        }
+        try (BufferedReader br = new BufferedReader(new FileReader(histFile))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                lines.add(line);
+            }
+        } catch (IOException e) {
+            
+            logger.error("Error reading history file: " + e.getMessage());
+        }
+        return lines;
+    }
+
+    /**
+     *  write history.txt with given lines
+     */
+    private void saveHistory(List<String> lines) {
+        File histFile = new File(HONEYFILES_DIR, HISTORY_FILE_NAME);
+        try (PrintWriter pw = new PrintWriter(new FileWriter(histFile, false))) {
+            for (String line : lines) {
+                pw.println(line);
+            }
+            pw.flush();
+        } catch (IOException e) {
+            logger.error("Error writing history file: " + e.getMessage());
+        }
+    }
+    
+    //end ***helper functions for history command***
 
         // "cd" command
         private void CdCommand(String line) throws IOException {
