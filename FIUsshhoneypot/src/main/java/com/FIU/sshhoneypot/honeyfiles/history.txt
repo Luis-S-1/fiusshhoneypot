@@ -1,12 +1,12 @@
-1  ifconfig
-2  time
-3  ssh 10.23.45.67
-4  history
-5  whoami
-6  uname -a
-7  uptime
-8  cat /etc/os-release
-9  ls -lah
+1 ifconfig
+2 time
+3 ssh 10.23.45.67
+4 history
+5 whoami
+6 uname -a
+7 uptime
+8 cat /etc/os-release
+9 ls -lah
 10 cd /var/log
 11 cat auth.log
 12 tail -n 50 /var/log/syslog
@@ -27,4 +27,3 @@
 27 chmod 600 ~/.ssh/id_rsa
 28 ssh -i ~/.ssh/id_rsa admin@10.23.45.67
 29 logout
-
