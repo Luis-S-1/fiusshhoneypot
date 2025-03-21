@@ -1,0 +1,12 @@
+Filesystem                1K-blocks     Used   Available Use% Mounted on
+devtmpfs                   8388608         0    8388608   0% /dev
+tmpfs                      8388608         0    8388608   0% /dev/shm
+tmpfs                      8388608      1200    8387408   1% /run
+/dev/mapper/rhel-root     62914560  34603008   28311552  56% /
+/dev/mapper/rhel-var      20971520   5767168   15204352  28% /var
+/dev/mapper/rhel-logs     52428800  10485760   41943040  20% /var/log
+/dev/sda1                  1048576    256000    792576  25% /boot
+/dev/mapper/rhel-home    104857600  12582912   92274688  12% /home
+/dev/mapper/rhel-opt     104857600  30408704   74448896  29% /opt
+/dev/mapper/rhel-data    524288000 262144000  262144000  50% /data
+tmpfs                     16777216        64   16777152   1% /run/user/0

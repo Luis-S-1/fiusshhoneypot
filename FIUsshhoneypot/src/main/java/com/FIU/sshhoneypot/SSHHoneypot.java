@@ -358,6 +358,25 @@ public class SSHHoneypot {
                             logger.info("User typed: {}", line);
                             touchCommand(line);
                         }
+                        else if ("df".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            printFile("df.txt");
+                        }
+                        else if ("df -h".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            printFile("df_h.txt");
+                        }
+                        else if ("ifconfig".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            printFile("ifconfig.txt");
+                        }
+                        //clear the screen:
+                        else if ("clear".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            // Clear the screen using ANSI escape codes
+                            write("\033[H\033[2J");
+                            out.flush();
+                        }
                         // if user entered unknown command:
                         else {
                             logger.info("User typed command: {}", line);
