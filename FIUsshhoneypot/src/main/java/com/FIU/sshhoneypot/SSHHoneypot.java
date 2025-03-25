@@ -144,6 +144,10 @@ public class SSHHoneypot {
          * containing their contents (file and subdirectory names).
          */
         private static final Map<String, List<String>> FILESYSTEM = new HashMap<>();
+        
+        //to construct a fake 'uptime':
+        private static final long bootTimeMillis = System.currentTimeMillis() - getFakeUptimeMillis();
+
 
         static {
             // Populate the fake root directory with default Centos 8 Linux subdirectories/files
@@ -342,6 +346,10 @@ public class SSHHoneypot {
                             writeLine("root         945     811  0 03:10 pts/0    00:00:00 bash");
                             writeLine("root         002     945  0 03:11 pts/0    00:00:00 ps");
                         }
+                        else if ("date".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            printDate();
+                        }
                         else if (line.startsWith("cat ")) {
                             logger.info("User typed: {}", line);
                             CatCommand(line);
@@ -366,9 +374,25 @@ public class SSHHoneypot {
                             logger.info("User typed: {}", line);
                             printFile("df_h.txt");
                         }
+                        else if ("ssh".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            printFile("ssh.txt");
+                        }
+                        else if (line.startsWith("ssh ")) {
+                            logger.info("User typed: {}", line);
+                            sshCommand(line);
+                        }
                         else if ("ifconfig".equalsIgnoreCase(line)) {
                             logger.info("User typed: {}", line);
                             printFile("ifconfig.txt");
+                        }
+                        else if ("uptime".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            printUptime();
+                        }
+                        else if (line.startsWith("ping ")) {
+                            logger.info("User typed: {}", line);
+                            simulatePing(line);
                         }
                         //clear the screen:
                         else if ("clear".equalsIgnoreCase(line)) {
@@ -769,6 +793,127 @@ public class SSHHoneypot {
                 }
             }
         }
+        
+        private void sshCommand(String line) throws IOException {
+            
+            String[] sshArgs = line.split("\\s+");
+            
+            if(sshArgs.length < 2) {
+                printFile("ssh.txt");
+            }
+            else {
+                switch(sshArgs[1]){
+                    
+            case "-V":
+                printFile("ssh_V.txt");
+                break;
+            case "-Q":
+                if (sshArgs.length < 3) {
+                    writeLine("option requires an argument -- Q");
+                    printFile("ssh.txt");
+                } else if ("cipher".equals(sshArgs[2])) {
+                    printFile("ssh_Q_cipher.txt");
+                    // ...
+                } else if ("mac".equals(sshArgs[2])) {
+                    printFile("ssh_Q_mac.txt");
+                } else {
+                    writeLine("ssh: Unsupported query for '-Q': " + sshArgs[2]);
+                }
+                break;
+                default:
+                printFile("ssh.txt");
+                }
+                
+            }
+            
+        }
+        
+        private static long getFakeUptimeMillis() {
+        // 14 days = 14 * 24 * 60 * 60 * 1000 ms
+        return 14L * 24 * 60 * 60 * 1000;
+        }
+        
+        private void printUptime() throws IOException {
+            //Current time
+            ZonedDateTime now = ZonedDateTime.now();
+            String timeStr = now.format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+
+            long uptimeMillis = System.currentTimeMillis() - bootTimeMillis;
+            long totalSeconds = uptimeMillis / 1000;
+            long days = totalSeconds / (24 * 3600);
+            long hours = (totalSeconds % (24 * 3600)) / 3600;
+            long minutes = (totalSeconds % 3600) / 60;
+
+            String uptimeStr = (days > 0)
+                ? String.format(" up %d days, %2d:%02d,", days, hours, minutes)
+                : String.format(" up %2d:%02d,", hours, minutes);
+
+            // Generate number of users
+            int users = 1 + (int)(Math.random() * 3); // 1 to 3 users
+
+            // Generate load averages
+            double load1 = Math.random() * 0.5;
+            double load5 = Math.random() * 0.5;
+            double load15 = Math.random() * 0.5;
+
+            String result = String.format(" %s%s  %d user%s,  load average: %.2f, %.2f, %.2f",
+                timeStr, uptimeStr, users, (users == 1 ? "" : "s"), load1, load5, load15);
+
+            writeLine(result);
+        }
+        
+        private void printDate() throws IOException {
+            ZonedDateTime now = ZonedDateTime.now(TimeZone.getTimeZone("America/New_York").toZoneId());
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("EEE MMM dd HH:mm:ss z yyyy", Locale.ENGLISH);
+            String formattedDate = now.format(formatter);
+            writeLine(formattedDate);
+        }
+        
+        private void simulatePing(String line) throws IOException {
+            String[] parts = line.split("\\s+");
+            if (parts.length < 2) {
+                writeLine("ping: usage error: Destination address required");
+                return;
+            }
+
+            String targetIP = parts[1];
+
+            if ("10.23.45.67".equals(targetIP)) {
+                // 'Succesful' ping to the address we allude to in 'history'.
+                writeLine("PING " + targetIP + " (" + targetIP + ") 56(84) bytes of data.");
+
+                for (int i = 1; i <= 4; i++) {
+                    double time = 0.034 + Math.random() * 0.005;
+                    writeLine(String.format("64 bytes from %s: icmp_seq=%d ttl=64 time=%.3f ms", targetIP, i, time));
+                    try {
+                        Thread.sleep(1000); //delay between ping replies
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+
+                writeLine("--- " + targetIP + " ping statistics ---");
+                writeLine("4 packets transmitted, 4 received, 0% packet loss, time 4004ms");
+                writeLine("rtt min/avg/max/mdev = 0.034/0.037/0.039/0.002 ms");
+            } else {
+                // Simulated unreachable ping
+                writeLine("PING " + targetIP + " (" + targetIP + ") 56(84) bytes of data.");
+                for (int i = 1; i <= 4; i++) {
+                    writeLine(String.format("From %s icmp_seq=%d Destination Host Unreachable", "pbc-svr04", i));
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        break;
+                    }
+                }
+                writeLine("--- " + targetIP + " ping statistics ---");
+                writeLine("4 packets transmitted, 0 received, 100% packet loss, time 4004ms");
+            }
+        }
+
+
+
+
 
         // Go up one level (for cd ..)
         private String goUpOneLevel(String path) {
