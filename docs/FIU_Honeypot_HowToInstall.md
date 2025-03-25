@@ -25,7 +25,7 @@ git clone https://github.com/Luis-S-1/fiusshhoneypot.git
 
 If it requests a username/password you can create a token in Github.
 
-then cd into FIUsshhoneypot
+then cd into fiusshhoneypot
 
 from there install the project with:
 
