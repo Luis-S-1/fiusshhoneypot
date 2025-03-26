@@ -18,6 +18,9 @@ import java.nio.file.Paths;
 public class WebDashboard {
 
     public static void startServer() {
+        
+        //bind the web server to the localhost interface so that no other machine can access the Spark server.
+        ipAddress("127.0.0.1");
         // Start Spark on port 4567
         port(4567);
 
