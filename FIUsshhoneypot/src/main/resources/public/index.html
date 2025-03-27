@@ -1,45 +1,115 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8" />
-    <title>Honeypot Dashboard</title>
+  <meta charset="utf-8" />
+  <title>SSH Honeypot Dashboard</title>
+  <!-- Bulma CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+
+  <style>
+    .golden-text {
+      color: #B6862C;
+    }
+  </style>
 </head>
 <body>
-    <h1>SSH Honeypot Dashboard</h1>
-    <button id="refreshLog">Refresh Log</button>
-    <button id="fetchSummary">Fetch Summary</button>
 
-    <h2>Log Content</h2>
-    <pre id="logContent"></pre>
+<!-- Hero Section with fiu colors -->
+<section class="hero" style="background-color: #081E3F; color: white;">
+  <div class="hero-body">
+    <div class="container">
+      <div class="level is-align-items-center">
+        <div class="level-left">
+          <div>
+            <h1 class="title golden-text">
+              SSH Honeypot Dashboard
+            </h1>
+            <h2 class="subtitle golden-text">
+              Monitor your logs & summaries
+            </h2>
+          </div>
+        </div>
+        <div class="level-right">
+  <div style="background-color: white; padding: 10px; border-radius: 8px;">
+    <figure class="image" style="max-width: 100px;">
+      <img src="fiu-logo.png" alt="FIU Logo">
+    </figure>
+  </div>
+</div>
+</section>
 
-    <h2>Summary</h2>
-    <div id="summary"></div>
 
-    <script>
-        const logContentEl = document.getElementById('logContent');
-        const summaryEl = document.getElementById('summary');
 
-        document.getElementById('refreshLog').addEventListener('click', () => {
-            fetch('/log')
-                .then(response => response.text())
-                .then(data => {
-                    logContentEl.textContent = data;
-                })
-                .catch(err => {
-                    console.error('Error fetching log:', err);
-                });
+  <!-- Main Content -->
+  <section class="section">
+    <div class="container">
+
+      <!-- Buttons -->
+<div class="buttons">
+  <button id="refreshLog" class="button" style="background-color: #081E3F; color: white;">
+    Refresh Log
+  </button>
+  <button id="fetchSummary" class="button" style="background-color: #B6862C; color: white;">
+    Fetch Summary
+  </button>
+</div>
+
+
+      <!-- Two Columns: Logs and Summary -->
+      <div class="columns mt-5">
+        <div class="column">
+          <h2 class="title is-4">Log Content</h2>
+          <pre id="logContent" class="notification is-light" style="white-space: pre-wrap;"></pre>
+        </div>
+        <div class="column">
+          <h2 class="title is-4">Summary</h2>
+          <div id="summary" class="notification is-light"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- JavaScript to handle fetch requests -->
+  <script>
+    document.getElementById('fetchSummary').addEventListener('click', () => {
+    fetch('/summary')
+        .then(response => response.json())
+        .then(json => {
+            summaryEl.textContent = json.summary || "No summary found.";
+        })
+        .catch(err => {
+            console.error('Error fetching summary:', err);
+            summaryEl.textContent = "Failed to fetch summary.";
         });
+});
+const logContentEl = document.getElementById('logContent');
+  const summaryEl = document.getElementById('summary');
 
-        document.getElementById('fetchSummary').addEventListener('click', () => {
-            fetch('/summary')
-                .then(response => response.json())
-                .then(json => {
-                    summaryEl.textContent = JSON.stringify(json);
-                })
-                .catch(err => {
-                    console.error('Error fetching summary:', err);
-                });
-        });
+  document.getElementById('refreshLog').addEventListener('click', () => {
+      fetch('/log')
+          .then(response => response.text())
+          .then(data => {
+              logContentEl.textContent = data;
+          })
+          .catch(err => {
+              console.error('Error fetching log:', err);
+              logContentEl.textContent = "Failed to load log.";
+          });
+  });
+
+  document.getElementById('fetchSummary').addEventListener('click', () => {
+      fetch('/summary')
+          .then(response => response.json())
+          .then(json => {
+              summaryEl.textContent = json.summary || "No summary found.";
+          })
+          .catch(err => {
+              console.error('Error fetching summary:', err);
+              summaryEl.textContent = "Failed to fetch summary.";
+          });
+  });
+
+
     </script>
 </body>
 </html>
