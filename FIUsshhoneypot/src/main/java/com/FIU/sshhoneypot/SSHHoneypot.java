@@ -394,6 +394,10 @@ public class SSHHoneypot {
                             logger.info("User typed: {}", line);
                             simulatePing(line);
                         }
+                        else if (line.startsWith("wget ")) {
+                            logger.info("User typed: {}", line);
+                            WgetCommand(line);
+                        }
                         //clear the screen:
                         else if ("clear".equalsIgnoreCase(line)) {
                             logger.info("User typed: {}", line);
@@ -910,10 +914,121 @@ public class SSHHoneypot {
                 writeLine("4 packets transmitted, 0 received, 100% packet loss, time 4004ms");
             }
         }
+        /**
+         * Simulates a wget download
+         * Syntax: wget <URL> -O <filename>
+         * Example: wget http://GenericUrl.com/malware -O trojan.sh
+         */
+        private void WgetCommand(String line) throws IOException {
+            
+            String[] parts = line.split("\\s+");
 
+            String url = null;
+            String outFileName = null;
 
+            // usage: [ "wget", "<URL>", "-O", "<filename>" ]
+            if (parts.length < 2) {
+                writeLine("wget: missing URL");
+                return;
+            } else {
+                url = parts[1];
+                for (int i = 2; i < parts.length; i++) {
+                    if ("-O".equals(parts[i]) && (i + 1 < parts.length)) {
+                        outFileName = parts[i + 1];
+                        break;
+                    }
+                }
+            }
 
+            // If no output file is specified:
+            if (outFileName == null) {
+                // Get a “basename” from the URL or default to "downloaded_file"
+                outFileName = extractFilenameFromURL(url);
+                if (outFileName.isEmpty()) {
+                    outFileName = "downloaded_file";
+                }
+            }
 
+            // store a new dummy file 
+            // in the current directory of the fake filesystem.
+
+            // get absolute path:
+            String resolvedPath = currentDirectory.equals("/")
+                ? "/" + outFileName
+                : currentDirectory + "/" + outFileName;
+
+            // find parent in FILESYSTEM
+            int lastSlash = resolvedPath.lastIndexOf('/');
+            String parentPath = (lastSlash <= 0) ? "/" : resolvedPath.substring(0, lastSlash);
+            if (!FILESYSTEM.containsKey(parentPath)) {
+                writeLine("wget: cannot write to " + parentPath + ": No such directory");
+                return;
+            }
+
+            // insert into the parent's contents if not present
+            List<String> parentContents = FILESYSTEM.get(parentPath);
+            if (!parentContents.contains(outFileName)) {
+                parentContents.add(outFileName);
+            }
+
+            // create the new file in honeyfiles
+            File malwareFile = new File(HONEYFILES_DIR, outFileName);
+            if (!malwareFile.exists()) {
+                try (FileWriter fw = new FileWriter(malwareFile)) {
+                    fw.write("Fake content from " + url + "\n");
+                } catch (IOException e) {
+                    writeLine("wget: error creating file '" + outFileName + "'");
+                    logger.error("Error creating file: " + e.getMessage());
+                    return;
+                }
+            }
+
+            // local time for success message
+            // place "start" and "end" time about 1 second apart.
+            ZonedDateTime startTime = ZonedDateTime.now();
+            ZonedDateTime endTime = startTime.plusSeconds(1);
+            String dateFormat = "yyyy-MM-dd HH:mm:ss";
+            String startString = startTime.format(java.time.format.DateTimeFormatter.ofPattern(dateFormat));
+            String endString   = endTime.format(java.time.format.DateTimeFormatter.ofPattern(dateFormat));
+
+            // wget output:
+            writeLine("--" + startString + "--  " + url);
+            writeLine("Resolving " + parseHostFromURL(url) + "... 198.51.100.42");
+            writeLine("Connecting to " + parseHostFromURL(url) + "|198.51.100.42|:80... connected.");
+            writeLine("HTTP request sent, awaiting response... 200 OK");
+            writeLine("Length: ~2048 (application/octet-stream)");
+            writeLine("Saving to: '" + outFileName + "'");
+            writeLine(outFileName + "         100%[========>]    2.00K  --.-KB/s    in 0s");
+            writeLine(endString + " (1.00 MB/s) - '" + outFileName + "' saved [2048/2048]");
+        }
+
+        /**
+         * Extracts a simple filename from the URL string.
+         * Example http://someurl.com/program.exe returns "program.exe".
+         */
+        private String extractFilenameFromURL(String url) {
+            int slash = url.lastIndexOf('/');
+            if (slash >= 0 && slash < url.length() - 1) {
+                return url.substring(slash + 1);
+            }
+            // If there's no slash, or slash is last, return empty
+            return "";
+        }
+
+        /**
+         * Parse the host from a URL
+         * example: http://exampleurl.com/file
+         */
+        private String parseHostFromURL(String url) {
+            // Cut out "http://" and "https://", then up to next slash
+            String stripped = url.replace("https://", "")
+                                 .replace("http://", "");
+            int slash = stripped.indexOf('/');
+            if (slash >= 0) {
+                return stripped.substring(0, slash);
+            }
+            return stripped;
+        }
 
         // Go up one level (for cd ..)
         private String goUpOneLevel(String path) {
