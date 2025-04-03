@@ -298,9 +298,9 @@ public class SSHHoneypot {
                             logger.info("User typed: {}", line);
                             CdCommand(line);
                         }
-                        else if ("ls".equalsIgnoreCase(line)) {
+                        else if (line.startsWith("ls")) {
                             logger.info("User typed: {}", line);
-                            LsCommand();
+                            LsCommand(line);
                         }
                         else if ("uname".equalsIgnoreCase(line)) {
                             logger.info("User typed: {}", line);
@@ -390,6 +390,10 @@ public class SSHHoneypot {
                             logger.info("User typed: {}", line);
                             printUptime();
                         }
+                        else if ("ping".equalsIgnoreCase(line)) {
+                            logger.info("User typed: {}", line);
+                            writeLine("ping: usage error: Destination address required");
+                        }
                         else if (line.startsWith("ping ")) {
                             logger.info("User typed: {}", line);
                             simulatePing(line);
@@ -421,125 +425,125 @@ public class SSHHoneypot {
             }
         }
 
-    // Helper functions:
-        
-        
-    //   ***helper functions for history command:***
-    /**
-     * Prints the history file, then appends a new line with the next index and
-     * the word "history". (So that the user sees that new line appear at the end.)
-     */
-    private void historyCommand() throws IOException {
-        // Read existing lines from history.txt
-        List<String> lines = loadHistory();
-
-        // Find the next index
-        int lastIndex = 0;
-        if (!lines.isEmpty()) {
-            // for the final line's index:
-            String lastLine = lines.get(lines.size() - 1);
-            int space = lastLine.indexOf(' ');
-            if (space > 0) {
-                String idxStr = lastLine.substring(0, space);
-                lastIndex = Integer.parseInt(idxStr);
-            }
-        }
-        int nextIndex = lastIndex + 1;
-
-        // Append the new line:
-        lines.add(nextIndex + " history");
-        
-        // Limit is 1000 lines:
-        while (lines.size() > HISTORY_LIMIT) {
-            lines.remove(0);
-        }
-
-        // write updated lines to history.txt
-        saveHistory(lines);
-
-        // print lines
-        for (String entry : lines) {
-            writeLine(entry);
-        }
-    }
-
-    /**
-     * Record any command other than history
-     */
-    private void recordCommand(String userCommand) throws IOException {
-        if (userCommand == null || userCommand.isEmpty()) {
-            return;
-        }
-
-        List<String> lines = loadHistory();
-        int lastIndex = 0;
-        if (!lines.isEmpty()) {
-            String lastLine = lines.get(lines.size() - 1);
-            int space = lastLine.indexOf(' ');
-            if (space > 0) {
-                String idxStr = lastLine.substring(0, space);
-                lastIndex = Integer.parseInt(idxStr);
-            }
-        }
-        int nextIndex = lastIndex + 1;
-
-        // Add new line
-        lines.add(nextIndex + " " + userCommand);
-
-        // limit is 1000
-        while (lines.size() > HISTORY_LIMIT) {
-            lines.remove(0);
-        }
-        saveHistory(lines);
-    }
-
-    /**
-     *  'history -c' deletes the history
-     */
-    private void clearHistory() throws IOException {
-        
-        List<String> emptyList = new ArrayList<>();
-        saveHistory(emptyList);
-    }
-
-    /**
-     * Load the entire history from history.txt, returning it as a List of lines.
-     */
-    private List<String> loadHistory() {
-        List<String> lines = new ArrayList<>();
-        File histFile = new File(HONEYFILES_DIR, HISTORY_FILE_NAME);
-        if (!histFile.exists()) {
+        // Helper functions:
             
+            
+        //   ***helper functions for history command:***
+        /**
+         * Prints the history file, then appends a new line with the next index and
+         * the word "history". (So that the user sees that new line appear at the end.)
+         */
+        private void historyCommand() throws IOException {
+            // Read existing lines from history.txt
+            List<String> lines = loadHistory();
+
+            // Find the next index
+            int lastIndex = 0;
+            if (!lines.isEmpty()) {
+                // for the final line's index:
+                String lastLine = lines.get(lines.size() - 1);
+                int space = lastLine.indexOf(' ');
+                if (space > 0) {
+                    String idxStr = lastLine.substring(0, space);
+                    lastIndex = Integer.parseInt(idxStr);
+                }
+            }
+            int nextIndex = lastIndex + 1;
+
+            // Append the new line:
+            lines.add(nextIndex + " history");
+            
+            // Limit is 1000 lines:
+            while (lines.size() > HISTORY_LIMIT) {
+                lines.remove(0);
+            }
+
+            // write updated lines to history.txt
+            saveHistory(lines);
+
+            // print lines
+            for (String entry : lines) {
+                writeLine(entry);
+            }
+        }
+
+        /**
+         * Record any command other than history
+         */
+        private void recordCommand(String userCommand) throws IOException {
+            if (userCommand == null || userCommand.isEmpty()) {
+                return;
+            }
+
+            List<String> lines = loadHistory();
+            int lastIndex = 0;
+            if (!lines.isEmpty()) {
+                String lastLine = lines.get(lines.size() - 1);
+                int space = lastLine.indexOf(' ');
+                if (space > 0) {
+                    String idxStr = lastLine.substring(0, space);
+                    lastIndex = Integer.parseInt(idxStr);
+                }
+            }
+            int nextIndex = lastIndex + 1;
+
+            // Add new line
+            lines.add(nextIndex + " " + userCommand);
+
+            // limit is 1000
+            while (lines.size() > HISTORY_LIMIT) {
+                lines.remove(0);
+            }
+            saveHistory(lines);
+        }
+
+        /**
+         *  'history -c' deletes the history
+         */
+        private void clearHistory() throws IOException {
+            
+            List<String> emptyList = new ArrayList<>();
+            saveHistory(emptyList);
+        }
+
+        /**
+         * Load the entire history from history.txt, returning it as a List of lines.
+         */
+        private List<String> loadHistory() {
+            List<String> lines = new ArrayList<>();
+            File histFile = new File(HONEYFILES_DIR, HISTORY_FILE_NAME);
+            if (!histFile.exists()) {
+                
+                return lines;
+            }
+            try (BufferedReader br = new BufferedReader(new FileReader(histFile))) {
+                String line;
+                while ((line = br.readLine()) != null) {
+                    lines.add(line);
+                }
+            } catch (IOException e) {
+                
+                logger.error("Error reading history file: " + e.getMessage());
+            }
             return lines;
         }
-        try (BufferedReader br = new BufferedReader(new FileReader(histFile))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                lines.add(line);
-            }
-        } catch (IOException e) {
-            
-            logger.error("Error reading history file: " + e.getMessage());
-        }
-        return lines;
-    }
 
-    /**
-     *  write history.txt with given lines
-     */
-    private void saveHistory(List<String> lines) {
-        File histFile = new File(HONEYFILES_DIR, HISTORY_FILE_NAME);
-        try (PrintWriter pw = new PrintWriter(new FileWriter(histFile, false))) {
-            for (String line : lines) {
-                pw.println(line);
+        /**
+         *  write history.txt with given lines
+         */
+        private void saveHistory(List<String> lines) {
+            File histFile = new File(HONEYFILES_DIR, HISTORY_FILE_NAME);
+            try (PrintWriter pw = new PrintWriter(new FileWriter(histFile, false))) {
+                for (String line : lines) {
+                    pw.println(line);
+                }
+                pw.flush();
+            } catch (IOException e) {
+                logger.error("Error writing history file: " + e.getMessage());
             }
-            pw.flush();
-        } catch (IOException e) {
-            logger.error("Error writing history file: " + e.getMessage());
         }
-    }
-    
-    //end ***helper functions for history command***
+        
+        //end ***helper functions for history command***
 
         // "cd" command
         private void CdCommand(String line) throws IOException {
@@ -575,16 +579,98 @@ public class SSHHoneypot {
                 }
             }
         }
+            
+        private void LsCommand(String line) throws IOException {
+            // Parse flags
+            // e.g.: "ls -la /etc" => tokens = ["ls", "-la", "/etc"]
+            // check if the user typed a directory path after flags, or just used the current dir.
+            String[] tokens = line.split("\\s+");
+            boolean longListing = false;
+            boolean showAll = false;
+            String targetDirectory = currentDirectory;
 
-        // "ls" command
-        private void LsCommand() throws IOException {
-            List<String> items = FILESYSTEM.get(currentDirectory);
+            for (int i = 1; i < tokens.length; i++) {
+                String token = tokens[i];
+                if (token.startsWith("-")) {
+                    if (token.contains("l")) longListing = true;
+                    if (token.contains("a")) showAll = true;
+                } else {
+                    // If not a flag, assume it's a path
+                    targetDirectory = resolvePath(token);
+                }
+            }
+
+            //If the directory doesn't exist or isn't in the FILESYSTEM map, display error:
+            if (!FILESYSTEM.containsKey(targetDirectory)) {
+                writeLine("ls: cannot access '" + targetDirectory + "': No such file or directory");
+                return;
+            }
+
+            //Get the items
+            List<String> items = new ArrayList<>(FILESYSTEM.get(targetDirectory));
+
+            // If user typed -a, we include "." and ".." if not already in the list.
+            if (showAll) {
+                if (!items.contains(".")) {
+                    items.add(".");
+                }
+                if (!items.contains("..") && !targetDirectory.equals("/")) {
+                    items.add("..");
+                }
+            }
+
+            // Sort items alphabetically
+            Collections.sort(items);
+
+            // simple listing if no parameter
+            if (!longListing) {
+                doSimpleLsPrint(items);
+                return;
+            }
+
+            //If parameter (-l) is used, produce a line for each file with fake metadata
+            for (String item : items) {
+                // decide if it's a directory or file
+                String absPath = targetDirectory.equals("/") 
+                                ? "/" + item 
+                                : targetDirectory + "/" + item;
+
+                boolean isDir = isDirectory(absPath);
+                // d = directory, - = regular file, maybe l = symlink
+                String typeChar = isDir ? "d" : "-";
+
+                //permissions: if directory, "drwxr-xr-x", if file, "-rw-r--r--"
+                String perms = isDir ? "rwxr-xr-x" : "rw-r--r--";
+
+                // ownership, size, date
+                // Possibly randomize the below:
+                String owner = "root";
+                String group = "root";
+                int size = isDir ? 4096 : randomFileSize();
+                String date = randomDateString(); 
+
+                // Construct typical 'ls -l' line, e.g:
+                // drwxr-xr-x  2 root root    4096 Mar 29  09:12 Documents
+                // Format: <typeChar><perms> <links> <owner> <group> <size> <date> <item>
+                String links = isDir ? "2" : "1";
+
+                String lineOut = String.format("%s%s %2s %-5s %-5s %8d %s %s",
+                        typeChar, perms, links, owner, group, size, date, item);
+
+                writeLine(lineOut);
+            }
+        }
+
+        /**
+         * ls with no parameter:
+         */
+        private void doSimpleLsPrint(List<String> items) throws IOException {
             if (items == null || items.isEmpty()) {
                 writeLine("");
                 return;
             }
 
-            // 1) Find the widest item
+            //Find the widest item
             int maxLen = 0;
             for (String item : items) {
                 if (item.length() > maxLen) {
@@ -592,12 +678,12 @@ public class SSHHoneypot {
                 }
             }
 
-            // 2) Add spacing
+            //Add spacing
             int colWidth = maxLen + 3;
             int screenWidth = 80;
             int numColumns = Math.max(1, screenWidth / colWidth);
 
-            // 3) Print items in columns
+            //Print items in columns
             StringBuilder line = new StringBuilder();
             int count = 0;
             for (int i = 0; i < items.size(); i++) {
@@ -610,6 +696,52 @@ public class SSHHoneypot {
                 }
             }
         }
+
+        /**
+         * Check if a path is a directory:
+         */
+        private boolean isDirectory(String path) {
+            return FILESYSTEM.containsKey(path);
+        }
+
+        /**
+         * Return a random plausible file size for a regular file.
+         * 
+         */
+        private int randomFileSize() {
+            return 1024 + (int)(Math.random() * 1024 * 1024); // 1KB to ~1MB
+        }
+
+        /**
+         * Use a plausible "ls -l" date/time
+         */
+        private String randomDateString() {
+            // generate random day, month, time
+            String[] months = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
+            String month = months[(int)(Math.random() * months.length)];
+            int day = 1 + (int)(Math.random() * 28);  // 1..28
+            int hour = (int)(Math.random() * 24);     // 0..23
+            int minute = (int)(Math.random() * 60);   // 0..59
+            return String.format("%s %2d %02d:%02d", month, day, hour, minute);
+        }
+
+        /**
+         * If user typed e.g. 'ls -l /etc', turn into absolute path
+         */
+        private String resolvePath(String target) {
+            if (target.startsWith("/")) {
+                // absolute path
+                return target;
+            } else {
+                // relative path
+                if (currentDirectory.equals("/")) {
+                    return "/" + target;
+                } else {
+                    return currentDirectory + "/" + target;
+                }
+            }
+        }
+
 
         // "cat" command
         private void CatCommand(String line) throws IOException {
