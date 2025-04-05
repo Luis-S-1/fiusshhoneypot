@@ -1,0 +1,24 @@
+Mar 31 07:58:21 pbc-svr04 sshd[1102]: pam_unix(sshd:auth): authentication failure; logname= uid=0 euid=0 tty=/dev/pts/0 ruser= rhost=192.0.2.101  user=root
+Mar 31 07:58:24 pbc-svr04 sshd[1102]: Failed password for root from 192.0.2.101 port 51846 ssh2
+Mar 31 07:58:25 pbc-svr04 sshd[1102]: Received disconnect from 192.0.2.101 port 51846:11: Bye [preauth]
+
+Mar 31 08:15:40 pbc-svr04 sshd[1153]: Accepted password for root from 203.0.113.45 port 48210 ssh2
+Mar 31 08:15:45 pbc-svr04 sshd[1153]: pam_unix(sshd:session): session opened for user root by (uid=0)
+Mar 31 08:16:01 pbc-svr04 sudo: palisade : TTY=pts/0 ; PWD=/home/palisade ; USER=root ; COMMAND=/usr/bin/yum update
+Mar 31 08:16:01 pbc-svr04 sudo: pam_unix(sudo:session): session opened for user root by palisade(uid=1000)
+Mar 31 08:16:06 pbc-svr04 sudo: pam_unix(sudo:session): session closed for user root
+
+Mar 31 08:25:12 pbc-svr04 sshd[1823]: Invalid user admin from 192.0.2.100 port 50432
+Mar 31 08:25:14 pbc-svr04 sshd[1823]: Failed password for invalid user admin from 192.0.2.100 port 50432 ssh2
+Mar 31 08:25:20 pbc-svr04 sshd[1823]: Received disconnect from 192.0.2.100 port 50432:11: Bye [preauth]
+
+Mar 31 09:02:55 pbc-svr04 sshd[1902]: Invalid user test from 198.51.100.88 port 60111
+Mar 31 09:02:57 pbc-svr04 sshd[1902]: Failed password for invalid user test from 198.51.100.88 port 60111 ssh2
+Mar 31 09:03:12 pbc-svr04 sshd[1902]: Received disconnect from 198.51.100.88 port 60111:11: Bye [preauth]
+
+Mar 31 09:05:43 pbc-svr04 sshd[1933]: Accepted password for root from 192.0.2.17 port 48923 ssh2
+Mar 31 09:05:43 pbc-svr04 sshd[1933]: pam_unix(sshd:session): session opened for user root by (uid=0)
+Mar 31 09:06:12 pbc-svr04 sshd[1933]: Received disconnect from 192.0.2.17 port 48923:11: disconnected by user
+Mar 31 09:06:12 pbc-svr04 sshd[1933]: pam_unix(sshd:session): session closed for user root
+
+

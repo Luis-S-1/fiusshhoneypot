@@ -188,7 +188,15 @@ public class SSHHoneypot {
             FILESYSTEM.put("/boot/efi", new ArrayList<>());
             FILESYSTEM.put("/boot/grub2", new ArrayList<>());
             FILESYSTEM.put("/boot/loader", new ArrayList<>());
-
+            
+            // Some subdirectories under /etc 
+            FILESYSTEM.put("/etc/ssh", new ArrayList<>());
+            populateDirByFileRead("/etc/ssh", "etc_ssh.txt");
+            
+            // Some subdirectories under /var
+            FILESYSTEM.put("/var/log", new ArrayList<>());
+            populateDirByFileRead("/var/log", "var_log.txt");
+            
             // root user home directory and subdirectories
             FILESYSTEM.put("/root", new ArrayList<>(Arrays.asList(
                     "Desktop", "Documents", "Downloads", "Music", "Pictures", "Videos"
@@ -1262,9 +1270,7 @@ public class SSHHoneypot {
             writeLine("");
             writeLine("All activities on this system are subject to monitoring, logging,");
             writeLine("and auditing. By continuing, you acknowledge that you have no");
-            writeLine("expectation of privacy while using this system. Any evidence of");
-            writeLine("unauthorized access or misuse will be reported to security");
-            writeLine("personnel and law enforcement authorities.");
+            writeLine("expectation of privacy while using this system.");
             writeLine("");
             writeLine("If you do not agree to these terms, please log off immediately.");
             writeLine("");
